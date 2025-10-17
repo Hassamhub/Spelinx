@@ -35,11 +35,7 @@ export default function ReferralPage() {
 
   const loadReferralStats = async () => {
     try {
-      const response = await authAPI.getReferralStats()
-      setStats(response.data)
-    } catch (error) {
-      console.error('Failed to load referral stats:', error)
-      // Set demo data if API fails
+      // For demo purposes, load static referral data since API isn't implemented
       setStats({
         referralCode: 'SPELINX123',
         totalReferrals: 24,
@@ -51,6 +47,16 @@ export default function ReferralPage() {
           { username: 'puzzle_master', joinedAt: '2024-01-14', isPremium: false, earnings: 10 },
           { username: 'snake_champ', joinedAt: '2024-01-13', isPremium: true, earnings: 25 }
         ]
+      })
+    } catch (error) {
+      console.error('Failed to load referral stats:', error)
+      setStats({
+        referralCode: 'SPELINX123',
+        totalReferrals: 0,
+        activeReferrals: 0,
+        totalEarnings: 0,
+        availableBalance: 0,
+        recentReferrals: []
       })
     } finally {
       setLoading(false)
