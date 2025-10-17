@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
+import Header from '../../../components/Header'
+import Footer from '../../../components/Footer'
 import { authAPI } from '@/lib/api'
 import { User, Trophy, Coins, Calendar, Settings, LogOut } from 'lucide-react'
 

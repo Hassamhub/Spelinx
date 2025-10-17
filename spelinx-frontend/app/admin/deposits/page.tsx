@@ -12,9 +12,9 @@ import {
   Search,
   Filter
 } from 'lucide-react'
-import Header from '@/components/Header'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Header from '../../../components/Header'
+import { Button } from '../../../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { adminAPI } from '@/lib/api'
 
 interface Deposit {
