@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Header from '../../../components/Header'
 import Footer from '../../../components/Footer'
 import { Button } from '../../../components/ui/button'
-import { authAPI } from '@/lib/api'
+import { authAPI } from '../../../../lib/api'
 
 export default function LoginPage() {
   const [isDarkMode, setIsDarkMode] = useState(true)
