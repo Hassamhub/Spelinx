@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import Header from '../../../components/Header'
-import Footer from '../../../components/Footer'
-import { storeAPI } from '../../../../lib/api'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
+import { storeAPI } from '@/lib/api'
 
 interface StoreItem {
   _id: string

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Header from '../../../components/Header'
-import Footer from '../../../components/Footer'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 const BOARD_WIDTH = 10
 const BOARD_HEIGHT = 20

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Header from '../../../components/Header'
-import Footer from '../../../components/Footer'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 const GRID_SIZE = 20
 const INITIAL_SNAKE = [{ x: 10, y: 10 }]

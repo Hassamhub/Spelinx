@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Header from '../../../components/Header'
-import Hero from '../../../components/Hero'
-import GameGrid from '../../../components/GameGrid'
-import PremiumSection from '../../../components/PremiumSection'
-import Leaderboard from '../../../components/Leaderboard'
-import Footer from '../../../components/Footer'
+import Header from '@/components/Header'
+import Hero from '@/components/Hero'
+import GameGrid from '@/components/GameGrid'
+import PremiumSection from '@/components/PremiumSection'
+import Leaderboard from '@/components/Leaderboard'
+import Footer from '@/components/Footer'
 
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true)
