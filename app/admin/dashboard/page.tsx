@@ -361,6 +361,14 @@ export default function AdminDashboard() {
                 >
                   Premium Payments
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto"
+                  onClick={() => router.push('/admin/store')}
+                >
+                  Manage Store
+                </Button>
               </div>
 
               {/* Search */}
