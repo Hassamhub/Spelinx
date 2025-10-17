@@ -62,6 +62,7 @@ export default function PremiumPaymentsManagement() {
 
   const loadPayments = async () => {
     try {
+      setLoading(true)
       const response = await adminAPI.getPremiumPayments()
       setPayments(response.data.payments || [])
     } catch (error: any) {
@@ -75,7 +76,9 @@ export default function PremiumPaymentsManagement() {
         alert('Access denied. Admin privileges required.')
         router.push('/login')
       } else {
-        alert('Failed to load premium payment data')
+        // Show error but don't immediately alert - let data load
+        console.warn('Failed to load premium payment data, but continuing...')
+        setPayments([]) // Set empty array so UI doesn't break
       }
     } finally {
       setLoading(false)

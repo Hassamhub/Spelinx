@@ -13,9 +13,13 @@ interface StoreItem {
   name: string
   description: string
   price: number
+  originalPrice?: number
+  discountPercentage?: number
+  discountExpiry?: string
   category: 'skins' | 'themes' | 'avatars' | 'premium'
   image?: string
   createdAt?: string
+  isActive: boolean
 }
 
 export default function StoreManagement() {
@@ -29,7 +33,8 @@ export default function StoreManagement() {
     name: '',
     description: '',
     price: 0,
-    category: 'skins'
+    category: 'skins',
+    isActive: true
   })
 
   useEffect(() => {
@@ -46,7 +51,8 @@ export default function StoreManagement() {
           description: 'Bright neon effects for your interface',
           price: 50,
           category: 'skins' as const,
-          createdAt: '2024-01-15'
+          createdAt: '2024-01-15',
+          isActive: true
         },
         {
           _id: '2',
@@ -54,7 +60,8 @@ export default function StoreManagement() {
           description: 'Complete dark theme with special effects',
           price: 75,
           category: 'themes' as const,
-          createdAt: '2024-01-14'
+          createdAt: '2024-01-14',
+          isActive: true
         },
         {
           _id: '3',
@@ -62,7 +69,8 @@ export default function StoreManagement() {
           description: 'Retro pixel art avatar collection',
           price: 30,
           category: 'avatars' as const,
-          createdAt: '2024-01-13'
+          createdAt: '2024-01-13',
+          isActive: true
         },
         {
           _id: '4',
@@ -70,7 +78,8 @@ export default function StoreManagement() {
           description: 'Premium membership with exclusive benefits',
           price: 199,
           category: 'premium' as const,
-          createdAt: '2024-01-12'
+          createdAt: '2024-01-12',
+          isActive: true
         }
       ]
       setItems(demoItems.filter(item => item.category === selectedCategory))
@@ -90,7 +99,8 @@ export default function StoreManagement() {
         name: '',
         description: '',
         price: 0,
-        category: 'skins'
+        category: 'skins',
+        isActive: true
       })
       alert('Item added successfully! (Demo mode)')
     } catch (error) {

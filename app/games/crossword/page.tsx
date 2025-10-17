@@ -4,25 +4,28 @@ import { useState, useEffect } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
-// Sample crossword data
+// Sample crossword data - Better crossword structure
 const CROSSWORD_DATA = {
   grid: [
-    ['C', 'O', 'M', 'P', 'U', 'T', 'E', 'R'],
-    ['O', '', '', '', '', '', '', ''],
-    ['M', '', '', '', '', '', '', ''],
-    ['P', '', '', '', '', '', '', ''],
-    ['U', '', '', '', '', '', '', ''],
-    ['T', '', '', '', '', '', '', ''],
-    ['E', '', '', '', '', '', '', ''],
-    ['R', '', '', '', '', '', '', '']
+    ['C', '', 'M', '', 'U', '', 'E', ''],
+    ['', 'O', '', 'P', '', 'T', '', 'R'],
+    ['M', '', 'M', '', 'U', '', 'E', ''],
+    ['', 'P', '', 'P', '', 'T', '', 'R'],
+    ['U', '', 'M', '', 'U', '', 'E', ''],
+    ['', 'T', '', 'P', '', 'T', '', 'R'],
+    ['E', '', 'M', '', 'U', '', 'E', ''],
+    ['', 'R', '', 'P', '', 'T', '', 'R']
   ],
   clues: {
     across: [
-      { number: 1, clue: 'Electronic device for processing data', answer: 'COMPUTER', startX: 0, startY: 0, length: 8 }
+      { number: 1, clue: 'Electronic device for processing data', answer: 'COMPUTER', startX: 0, startY: 0, length: 8 },
+      { number: 3, clue: 'Large body of water', answer: 'OCEAN', startX: 1, startY: 1, length: 5 },
+      { number: 5, clue: 'What you are doing right now', answer: 'PLAYING', startX: 0, startY: 2, length: 7 }
     ],
     down: [
       { number: 1, clue: 'Basic unit of computation', answer: 'BIT', startX: 0, startY: 0, length: 3 },
-      { number: 2, clue: 'High-level programming language', answer: 'JAVA', startX: 2, startY: 0, length: 4 }
+      { number: 2, clue: 'High-level programming language', answer: 'JAVA', startX: 2, startY: 0, length: 4 },
+      { number: 4, clue: 'Smallest unit of memory', answer: 'BYTE', startX: 4, startY: 0, length: 4 }
     ]
   }
 }
@@ -34,6 +37,7 @@ export default function CrosswordGame() {
   const [completed, setCompleted] = useState(false)
 
   const handleCellClick = (x: number, y: number) => {
+    // Allow clicking on any cell that should be filled (not empty in original grid)
     if (CROSSWORD_DATA.grid[y][x] !== '') {
       setSelectedCell({ x, y })
     }
@@ -74,7 +78,7 @@ export default function CrosswordGame() {
   }
 
   const resetPuzzle = () => {
-    setGrid(CROSSWORD_DATA.grid.map(row => row.map(cell => cell === '' ? '' : '')))
+    setGrid(CROSSWORD_DATA.grid.map(row => row.map(cell => '')))
     setSelectedCell(null)
     setCompleted(false)
   }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { useSound } from '@/hooks/useSound'
 
 const BOARD_WIDTH = 10
 const BOARD_HEIGHT = 20
@@ -87,7 +88,13 @@ export default function TetrisGame() {
   const [gameOver, setGameOver] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
   const gameLoopRef = useRef<NodeJS.Timeout>()
+
+  // Sound effects
+  const lineClearSound = useSound('/sounds/game-win.mp3', 0.6)
+  const piecePlaceSound = useSound('/sounds/game-start.mp3', 0.4)
+  const gameOverSound = useSound('/sounds/game-lose.mp3')
 
   const generatePiece = (type?: TetrominoType): Piece => {
     const types = Object.keys(TETROMINOES) as TetrominoType[]
@@ -200,6 +207,13 @@ export default function TetrisGame() {
       setLines(prev => prev + linesCleared)
       setScore(prev => prev + linesCleared * 100 * level)
 
+      // Play sound effects
+      if (linesCleared > 0) {
+        lineClearSound.play()
+      } else {
+        piecePlaceSound.play()
+      }
+
       // Spawn next piece
       setCurrentPiece(nextPiece)
       setNextPiece(generatePiece())
@@ -207,6 +221,7 @@ export default function TetrisGame() {
       // Check game over
       if (!isValidMove(nextPiece!, clearedBoard, nextPiece!.x, nextPiece!.y)) {
         setGameOver(true)
+        gameOverSound.play()
       }
     }
   }
@@ -274,6 +289,42 @@ export default function TetrisGame() {
     setLevel(Math.floor(lines / 10) + 1)
   }, [lines])
 
+  // Touch controls for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    setTouchStart({ x: touch.clientX, y: touch.clientY })
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return
+
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStart.x
+    const deltaY = touch.clientY - touchStart.y
+    const minSwipeDistance = 30
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          movePiece('right')
+        } else {
+          movePiece('left')
+        }
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(deltaY) > minSwipeDistance) {
+        if (deltaY > 0) {
+          movePiece('down')
+        } else {
+          rotateCurrentPiece()
+        }
+      }
+    }
+  }
+
+
   // Keyboard controls
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -340,7 +391,11 @@ export default function TetrisGame() {
             <div className="flex-1">
               <div className="glass-premium rounded-2xl p-6 border border-white/20">
                 <div className="flex justify-center mb-4">
-                  <div className="grid gap-0 border-2 border-white/20 rounded-lg overflow-hidden">
+                  <div
+                    className="grid gap-0 border-2 border-white/20 rounded-lg overflow-hidden touch-none"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                  >
                     {board.map((row, y) =>
                       row.map((cell, x) => {
                         const isCurrentPiece = currentPiece &&
@@ -489,11 +544,12 @@ export default function TetrisGame() {
               <div>
                 <h4 className="text-lg font-semibold text-gray-300 mb-2">Controls:</h4>
                 <ul className="text-gray-400 space-y-1 text-sm">
-                  <li>• ← → Arrow keys: Move left/right</li>
+                  <li>• ← → Arrow keys: Move left/right (desktop)</li>
                   <li>• ↓ Arrow key: Move down faster</li>
                   <li>• ↑ Arrow key or Spacebar: Rotate piece</li>
                   <li>• Enter: Drop piece instantly</li>
                   <li>• P: Pause/Resume game</li>
+                  <li>• 📱 Swipe on board: Move/rotate (mobile)</li>
                 </ul>
               </div>
               <div>

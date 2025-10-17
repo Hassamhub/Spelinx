@@ -92,7 +92,43 @@ const weeklyRewards = [
 
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState('global')
+  const [currentLeaderboardData, setCurrentLeaderboardData] = useState(leaderboardData)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    loadLeaderboard(activeTab)
+  }, [activeTab])
+
+  const loadLeaderboard = async (filter: string) => {
+    setLoading(true)
+    try {
+      // For now, just filter the existing data based on the tab
+      // In a real app, this would call an API
+      let filteredData = [...leaderboardData]
+
+      switch (filter) {
+        case 'weekly':
+          // Simulate weekly data (top 8 players)
+          filteredData = leaderboardData.slice(0, 8)
+          break
+        case 'monthly':
+          // Simulate monthly data (top 6 players)
+          filteredData = leaderboardData.slice(0, 6)
+          break
+        case 'global':
+        default:
+          filteredData = leaderboardData
+          break
+      }
+
+      setCurrentLeaderboardData(filteredData)
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -177,43 +213,50 @@ export default function LeaderboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {leaderboardData.map((player, index) => (
-                    <motion.div
-                      key={player.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      className={`flex items-center justify-between p-4 rounded-lg glass hover:glow-premium transition-all duration-300 ${
-                        index < 3 ? 'border border-white/30' : ''
-                      }`}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center justify-center w-10 h-10">
-                          {getRankIcon(player.rank)}
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="text-2xl">{player.avatar}</div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="font-semibold text-white">{player.username}</span>
-                              {player.isPremium && (
-                                <Crown className="w-4 h-4 text-spelinx-secondary" />
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-400">
-                              {player.gamesPlayed} games • {player.winRate}% win rate
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-spelinx-primary mx-auto mb-4"></div>
+                      <p className="text-gray-400">Loading leaderboard...</p>
+                    </div>
+                  ) : (
+                    currentLeaderboardData.map((player, index) => (
+                      <motion.div
+                        key={player.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 + index * 0.1 }}
+                        className={`flex items-center justify-between p-4 rounded-lg glass hover:glow-premium transition-all duration-300 ${
+                          index < 3 ? 'border border-white/30' : ''
+                        }`}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center justify-center w-10 h-10">
+                            {getRankIcon(player.rank)}
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-2xl">{player.avatar}</div>
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="font-semibold text-white">{player.username}</span>
+                                {player.isPremium && (
+                                  <Crown className="w-4 h-4 text-spelinx-secondary" />
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {player.gamesPlayed} games • {player.winRate}% win rate
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold text-spelinx-accent">
-                          {player.score.toLocaleString()}
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-spelinx-accent">
+                            {player.score.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-400">points</div>
                         </div>
-                        <div className="text-xs text-gray-400">points</div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

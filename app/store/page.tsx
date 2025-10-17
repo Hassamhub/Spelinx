@@ -38,12 +38,27 @@ export default function StorePage() {
 
   const handlePurchase = async (itemId: string) => {
     try {
+      // Check if user is logged in
+      const token = localStorage.getItem('spelinx_token')
+      if (!token) {
+        alert('Please login to purchase items')
+        window.location.href = '/login'
+        return
+      }
+
       await storeAPI.purchaseItem(itemId, 'wallet')
       alert('Purchase successful!')
-      // Refresh items or user balance
-    } catch (error) {
+      loadStoreItems() // Refresh items
+    } catch (error: any) {
       console.error('Purchase failed:', error)
-      alert('Purchase failed. Please try again.')
+      if (error.response?.status === 401) {
+        alert('Please login to purchase items')
+        window.location.href = '/login'
+      } else if (error.response?.status === 402) {
+        alert('Insufficient balance. Please add funds to your wallet.')
+      } else {
+        alert('Purchase failed. Please try again.')
+      }
     }
   }
 

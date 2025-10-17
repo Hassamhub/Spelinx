@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { useSound } from '@/hooks/useSound'
 
 const GRID_SIZE = 20
 const INITIAL_SNAKE = [{ x: 10, y: 10 }]
@@ -18,6 +19,12 @@ export default function SnakeGame() {
   const [gameOver, setGameOver] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'master'>('easy')
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
+
+  // Sound effects
+  const gameStartSound = useSound('/sounds/game-start.mp3')
+  const foodEatenSound = useSound('/sounds/game-win.mp3')
+  const gameOverSound = useSound('/sounds/game-lose.mp3')
 
   // Difficulty settings
   const getGameSpeed = () => {
@@ -80,6 +87,7 @@ export default function SnakeGame() {
       if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
         setGameOver(true)
         setGameRunning(false)
+        gameOverSound.play()
         return currentSnake
       }
 
@@ -87,6 +95,7 @@ export default function SnakeGame() {
       if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
         setGameOver(true)
         setGameRunning(false)
+        gameOverSound.play()
         return currentSnake
       }
 
@@ -95,6 +104,7 @@ export default function SnakeGame() {
       // Check food collision
       if (head.x === food.x && head.y === food.y) {
         setScore(prev => prev + (10 * getScoreMultiplier()))
+        foodEatenSound.play()
         generateFood()
       } else {
         newSnake.pop()
@@ -116,6 +126,42 @@ export default function SnakeGame() {
     }
     setDirection(newDirection)
   }, [direction])
+
+  // Touch controls for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    setTouchStart({ x: touch.clientX, y: touch.clientY })
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return
+
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStart.x
+    const deltaY = touch.clientY - touchStart.y
+    const minSwipeDistance = 50
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          changeDirection({ x: 1, y: 0 }) // Right
+        } else {
+          changeDirection({ x: -1, y: 0 }) // Left
+        }
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(deltaY) > minSwipeDistance) {
+        if (deltaY > 0) {
+          changeDirection({ x: 0, y: 1 }) // Down
+        } else {
+          changeDirection({ x: 0, y: -1 }) // Up
+        }
+      }
+    }
+  }
+
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -224,7 +270,9 @@ export default function SnakeGame() {
             {/* Game Board */}
             <div className="flex justify-center mb-6">
               <div
-                className="grid gap-0 border-2 border-spelinx-primary rounded-lg overflow-hidden"
+                className="grid gap-0 border-2 border-spelinx-primary rounded-lg overflow-hidden touch-none"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
                 style={{
                   gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
                   width: '400px',
@@ -260,7 +308,8 @@ export default function SnakeGame() {
             {/* Controls */}
             <div className="text-center">
               <div className="text-gray-400 mb-4">
-                <p>Use arrow keys to move • Spacebar to start/pause/reset</p>
+                <p>🖥️ Use arrow keys to move • Spacebar to start/pause/reset</p>
+                <p>📱 Swipe on the game board to control the snake on mobile devices</p>
               </div>
 
               {gameOver && (
@@ -288,7 +337,8 @@ export default function SnakeGame() {
           <div className="mt-8 glass rounded-xl p-6">
             <h3 className="text-xl font-bold text-white mb-4">How to Play</h3>
             <ul className="text-gray-300 space-y-2">
-              <li>• Use arrow keys to control the snake</li>
+              <li>• Use arrow keys to control the snake (desktop)</li>
+              <li>• Swipe on the game board to control the snake (mobile)</li>
               <li>• Eat the red food to grow and increase score</li>
               <li>• Avoid hitting walls or yourself</li>
               <li>• Press spacebar to start/pause the game</li>

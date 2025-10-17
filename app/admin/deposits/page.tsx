@@ -61,6 +61,7 @@ export default function DepositsManagement() {
 
   const loadDeposits = async () => {
     try {
+      setLoading(true)
       const response = await adminAPI.getDeposits()
       setDeposits(response.data.deposits || [])
     } catch (error: any) {
@@ -74,7 +75,9 @@ export default function DepositsManagement() {
         alert('Access denied. Admin privileges required.')
         router.push('/login')
       } else {
-        alert('Failed to load deposits data')
+        // Show error but don't immediately alert - let data load
+        console.warn('Failed to load deposits data, but continuing...')
+        setDeposits([]) // Set empty array so UI doesn't break
       }
     } finally {
       setLoading(false)

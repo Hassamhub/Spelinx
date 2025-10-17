@@ -1,20 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Toaster } from 'react-hot-toast'
+import { DevSafetyProvider } from '@/components/DevSafetyProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SPELINX - Premium Gaming Platform',
-  description: 'Experience the ultimate gaming platform with premium features, stunning visuals, and endless entertainment.',
-  keywords: 'gaming, premium, platform, multiplayer, achievements, leaderboards',
-  authors: [{ name: 'SPELINX Team' }],
-  openGraph: {
-    title: 'SPELINX - Premium Gaming Platform',
-    description: 'Play. Progress. Prevail.',
-    type: 'website',
-  },
+  title: 'SPELINX - Play Games & Earn Rewards',
+  description: 'The ultimate gaming platform with premium features and rewards',
 }
 
 export default function RootLayout({
@@ -23,19 +16,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
-        {children}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#333',
-              color: '#fff',
-            },
-          }}
-        />
+    <html lang="en">
+      <body className={inter.className}>
+        <DevSafetyProvider>
+          {children}
+        </DevSafetyProvider>
       </body>
     </html>
   )

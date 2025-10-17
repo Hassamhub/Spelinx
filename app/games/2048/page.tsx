@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { useSound } from '@/hooks/useSound'
 
 const GRID_SIZE = 4
 const INITIAL_GRID = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0))
@@ -13,6 +14,12 @@ export default function Game2048() {
   const [gameOver, setGameOver] = useState(false)
   const [won, setWon] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
+
+  // Sound effects
+  const moveSound = useSound('/sounds/game-start.mp3', 0.3)
+  const mergeSound = useSound('/sounds/game-win.mp3', 0.5)
+  const gameOverSound = useSound('/sounds/game-lose.mp3')
 
   const generateRandomTile = (currentGrid: number[][]) => {
     const emptyCells: { x: number; y: number }[] = []
@@ -125,7 +132,9 @@ export default function Game2048() {
     }
 
     if (moved) {
+      moveSound.play()
       setGrid(newGrid)
+      checkGameState(newGrid)
     }
   }
 
@@ -155,6 +164,7 @@ export default function Game2048() {
     }
 
     setGameOver(true)
+    gameOverSound.play()
   }
 
   const getTileColor = (value: number) => {
@@ -178,6 +188,42 @@ export default function Game2048() {
   useEffect(() => {
     initializeGame()
   }, [])
+
+  // Touch controls for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    setTouchStart({ x: touch.clientX, y: touch.clientY })
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return
+
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStart.x
+    const deltaY = touch.clientY - touchStart.y
+    const minSwipeDistance = 50
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          move('right')
+        } else {
+          move('left')
+        }
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(deltaY) > minSwipeDistance) {
+        if (deltaY > 0) {
+          move('down')
+        } else {
+          move('up')
+        }
+      }
+    }
+  }
+
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -234,7 +280,11 @@ export default function Game2048() {
 
             {/* Game Board */}
             <div className="flex justify-center mb-6">
-              <div className="grid grid-cols-4 gap-2 p-4 bg-gray-800 rounded-lg">
+              <div
+                className="grid grid-cols-4 gap-2 p-4 bg-gray-800 rounded-lg touch-none"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+              >
                 {grid.map((row, i) =>
                   row.map((cell, j) => (
                     <div
@@ -311,7 +361,8 @@ export default function Game2048() {
           <div className="mt-8 glass rounded-xl p-6">
             <h3 className="text-xl font-bold text-white mb-4">How to Play</h3>
             <ul className="text-gray-300 space-y-2">
-              <li>• Use arrow keys to move all tiles in that direction</li>
+              <li>• Use arrow keys to move all tiles in that direction (desktop)</li>
+              <li>• Swipe on the game board to move tiles (mobile)</li>
               <li>• When two tiles with the same number touch, they merge into one</li>
               <li>• Every move adds a new tile (2 or 4) to the board</li>
               <li>• Try to reach the 2048 tile!</li>
