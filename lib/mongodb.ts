@@ -1,46 +1,98 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGO_URI!;
+// Define Mongoose schemas
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  avatar: { type: String },
+  level: { type: Number, default: 1 },
+  xp: { type: Number, default: 0 },
+  walletBalance: { type: Number, default: 0 },
+  totalEarnings: { type: Number, default: 0 },
+  referralCode: { type: String, required: true, unique: true },
+  referredBy: { type: String },
+  isPremium: { type: Boolean, default: false },
+  premiumExpiresAt: { type: Date },
+  isAdmin: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGO_URI environment variable inside .env.local');
-}
+const WalletSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  balance: { type: Number, default: 0 },
+  totalDeposits: { type: Number, default: 0 },
+  totalWithdrawals: { type: Number, default: 0 },
+  transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
-let cached = (global as any).mongoose;
+const ReferralSchema = new mongoose.Schema({
+  referrerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  referredId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  referralCode: { type: String, required: true },
+  rewardEarned: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
+const GameHistorySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  gameType: { type: String, required: true },
+  score: { type: Number, default: 0 },
+  duration: { type: Number, default: 0 },
+  completed: { type: Boolean, default: false },
+  rewardEarned: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
 
-async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
-  }
+const TransactionSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: {
+    type: String,
+    enum: ['deposit', 'withdrawal', 'game_reward', 'referral_reward', 'premium_payment'],
+    required: true
+  },
+  amount: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'failed'],
+    default: 'pending'
+  },
+  description: { type: String },
+  paymentProof: { type: String },
+  proofImage: { type: String }, // For premium payment proofs
+  submittedAt: { type: Date },
+  verified: { type: Boolean, default: false },
+  verifiedAt: { type: Date },
+  verifiedBy: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
+// Create models
+export const User = mongoose.models.User || mongoose.model('User', UserSchema);
+export const Wallet = mongoose.models.Wallet || mongoose.model('Wallet', WalletSchema);
+export const Referral = mongoose.models.Referral || mongoose.model('Referral', ReferralSchema);
+export const GameHistory = mongoose.models.GameHistory || mongoose.model('GameHistory', GameHistorySchema);
+export const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('✅ Connected to MongoDB');
-      return mongoose;
-    });
-  }
+// Database connection
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/spelinx';
 
+export async function connectDB() {
   try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
-  }
+    if (mongoose.connection.readyState >= 1) {
+      return;
+    }
 
-  return cached.conn;
+    await mongoose.connect(MONGODB_URI);
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
 }
 
-export { connectDB };
+export default connectDB;

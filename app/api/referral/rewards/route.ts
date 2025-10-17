@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
-import { connectDB } from '@/lib/mongodb'
-import Referral from '@/models/Referral'
-import Wallet from '@/models/Wallet'
-import User from '@/models/User'
+import { connectDB, Referral, Wallet, User } from '@/lib/mongodb'
 
 export async function POST(request: NextRequest) {
   try {

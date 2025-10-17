@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { connectDB } from '@/lib/mongodb';
-import Referral from '@/models/Referral';
+import { connectDB, Referral } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest) {
   try {

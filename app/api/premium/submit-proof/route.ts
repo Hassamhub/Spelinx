@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { connectDB } from '@/lib/mongodb';
-import User from '@/models/User';
-import Wallet from '@/models/Wallet';
-import { PremiumPaymentProof } from '@/models/Transaction';
+import { connectDB, User, Wallet, Transaction } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +29,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if proof already exists
-    const existingProof = await PremiumPaymentProof.findOne({ transactionId });
+    const existingProof = await Transaction.findOne({
+      userId: decoded.id,
+      type: 'premium_payment',
+      proofImage: { $exists: true }
+    });
     if (existingProof) {
       return NextResponse.json({
         error: "Payment proof already submitted for this transaction"
@@ -53,18 +54,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid plan type" }, { status: 400 });
     }
 
-    // Create payment proof record
-    const paymentProof = new PremiumPaymentProof({
-      transactionId,
+    // Create transaction record for premium payment proof
+    const transaction = new Transaction({
       userId: decoded.id,
-      planType,
+      type: 'premium_payment',
       amount: selectedPlan.cost,
+      description: `${selectedPlan.name} payment proof`,
       proofImage,
-      status: 'submitted',
-      submittedAt: new Date()
+      submittedAt: new Date(),
+      status: 'pending'
     });
 
-    await paymentProof.save();
+    await transaction.save();
 
     console.log('Payment proof submitted:', {
       transactionId,
@@ -76,8 +77,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Payment proof submitted successfully. Admin will verify and process your premium activation within 24 hours.",
-      proofId: paymentProof._id,
-      transactionId: paymentProof.transactionId,
+      proofId: transaction._id,
+      transactionId: transactionId,
       status: 'submitted',
       estimatedProcessingTime: "24 hours"
     });

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { connectDB } from '@/lib/mongodb';
-import User from '@/models/User';
-import Wallet from '@/models/Wallet';
+import { connectDB, User, Wallet } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
   try {
