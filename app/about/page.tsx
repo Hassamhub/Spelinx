@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Users, Target, Award, Heart, Zap, Shield } from 'lucide-react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 const stats = [
   { icon: Users, value: '10K+', label: 'Active Players', color: 'text-blue-400' },

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && echo '=== STATIC EXPORT COMPLETE ===' && ls -la out/ | head -10",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "export": "next export"

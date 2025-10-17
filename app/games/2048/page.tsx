@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 const GRID_SIZE = 4
 const INITIAL_GRID = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0))
