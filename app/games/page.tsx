@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import Header from '@/components/Header'
-import GameGrid from '@/components/GameGrid'
-import Footer from '@/components/Footer'
+import Header from '../components/Header'
+import GameGrid from '../components/GameGrid'
+import Footer from '../components/Footer'
 
 export default function GamesPage() {
   const [isDarkMode, setIsDarkMode] = useState(true)
