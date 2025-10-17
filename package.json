@@ -1,0 +1,58 @@
+{
+  "name": "spelinx",
+  "version": "1.0.0",
+  "description": "SPELINX - Premium Gaming Platform with modern glassmorphism UI",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "dev:server": "nodemon server.js",
+    "build": "npm install && cd spelinx-frontend && npm install --legacy-peer-deps && npm run build && echo '=== BUILD COMPLETE ===' && ls -la out/ | head -10",
+    "heroku-postbuild": "cd spelinx-frontend && npm install --legacy-peer-deps && npm run build"
+  },
+  "keywords": [
+    "gaming",
+    "platform",
+    "nextjs",
+    "react",
+    "mongodb",
+    "socket.io",
+    "glassmorphism",
+    "tailwindcss"
+  ],
+  "author": "SPELINX Team",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.1.0",
+    "fs": "^0.0.1-security",
+    "http-proxy-middleware": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.3",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/spelinx.git"
+  },
+  "homepage": "https://spelinx.onrender.com",
+  "bugs": {
+    "url": "https://github.com/yourusername/spelinx/issues"
+  }
+}
