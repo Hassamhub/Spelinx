@@ -35,21 +35,37 @@ export default function ReferralPage() {
 
   const loadReferralStats = async () => {
     try {
-      // For demo purposes, load static referral data since API isn't implemented
-      setStats({
-        referralCode: 'SPELINX123',
-        totalReferrals: 24,
-        activeReferrals: 18,
-        totalEarnings: 450,
-        availableBalance: 225,
-        recentReferrals: [
-          { username: 'gamer_pro', joinedAt: '2024-01-15', isPremium: true, earnings: 25 },
-          { username: 'puzzle_master', joinedAt: '2024-01-14', isPremium: false, earnings: 10 },
-          { username: 'snake_champ', joinedAt: '2024-01-13', isPremium: true, earnings: 25 }
-        ]
-      })
+      // Get referral code from API
+      const codeResponse = await fetch('/api/referral/code')
+      const codeData = await codeResponse.json()
+
+      // Get referral stats from API
+      const statsResponse = await fetch('/api/referral/stats')
+      const statsData = await statsResponse.json()
+
+      if (statsResponse.ok && codeResponse.ok) {
+        setStats({
+          referralCode: codeData.referralCode,
+          totalReferrals: statsData.totalReferrals || 0,
+          activeReferrals: statsData.completedReferrals || 0,
+          totalEarnings: statsData.totalEarned || 0,
+          availableBalance: (statsData.totalEarned || 0) * 0.5, // 50% available for withdrawal
+          recentReferrals: [] // For now, we'll keep this empty since we don't have detailed referral history
+        })
+      } else {
+        // Fallback to demo data if API fails
+        setStats({
+          referralCode: codeData.referralCode || 'SPELINX123',
+          totalReferrals: 0,
+          activeReferrals: 0,
+          totalEarnings: 0,
+          availableBalance: 0,
+          recentReferrals: []
+        })
+      }
     } catch (error) {
       console.error('Failed to load referral stats:', error)
+      // Fallback to demo data
       setStats({
         referralCode: 'SPELINX123',
         totalReferrals: 0,
