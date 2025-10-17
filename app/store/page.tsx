@@ -117,7 +117,7 @@ export default function StorePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
           >
             {items.map((item, index) => (
               <motion.div
@@ -147,6 +147,72 @@ export default function StorePage() {
                 </div>
               </motion.div>
             ))}
+          </motion.div>
+
+          {/* Transaction History Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass-premium rounded-2xl p-6 border border-white/20"
+          >
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+              <span className="text-2xl mr-2">📋</span>
+              Recent Transactions
+            </h3>
+
+            <div className="space-y-4">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-spelinx-primary to-spelinx-secondary rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold">🎨</span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">Neon Glow Skin</div>
+                      <div className="text-xs text-gray-400">Purchased 2 hours ago</div>
+                    </div>
+                  </div>
+                  <div className="text-spelinx-accent font-bold">-50 INX</div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold">👑</span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">SPELINX Plus Monthly</div>
+                      <div className="text-xs text-gray-400">Purchased 1 day ago</div>
+                    </div>
+                  </div>
+                  <div className="text-green-400 font-bold">+25 INX Bonus</div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold">🎯</span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">Daily Check-in Bonus</div>
+                      <div className="text-xs text-gray-400">Received 2 days ago</div>
+                    </div>
+                  </div>
+                  <div className="text-green-400 font-bold">+10 INX</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <button className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white font-semibold hover:bg-white/20 transition-colors">
+                View All Transactions
+              </button>
+            </div>
           </motion.div>
 
           {items.length === 0 && (
