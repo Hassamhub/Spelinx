@@ -98,7 +98,7 @@ export async function connectDB() {
     console.log('Connected to MongoDB');
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    throw new Error(`Database connection failed: ${error.message}`);
+    throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
