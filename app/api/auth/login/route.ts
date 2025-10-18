@@ -108,10 +108,26 @@ export async function POST(request: NextRequest) {
 
     return response;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
+
+    // Provide more specific error messages
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { error: 'Invalid data provided' },
+        { status: 400 }
+      );
+    }
+
+    if (error.name === 'MongoError' && error.code === 11000) {
+      return NextResponse.json(
+        { error: 'Database connection issue' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Server error during login' },
+      { error: 'Server error during login: ' + (error.message || 'Unknown error') },
       { status: 500 }
     );
   }

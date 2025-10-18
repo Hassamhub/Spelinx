@@ -130,10 +130,26 @@ export async function POST(request: NextRequest) {
 
     return response;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error);
+
+    // Provide more specific error messages
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { error: 'Invalid data provided' },
+        { status: 400 }
+      );
+    }
+
+    if (error.name === 'MongoError' && error.code === 11000) {
+      return NextResponse.json(
+        { error: 'Email or username already exists' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Server error during signup' },
+      { error: 'Server error during signup: ' + (error.message || 'Unknown error') },
       { status: 500 }
     );
   }
