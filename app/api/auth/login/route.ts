@@ -4,10 +4,14 @@ import jwt from 'jsonwebtoken';
 import { connectDB, User, Wallet } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
+  console.log('Login attempt received');
+
   try {
     const { email, password } = await request.json();
+    console.log('Login data:', { email, password: '***' });
 
     await connectDB();
+    console.log('Database connected');
 
     // Validate input
     if (!email || !password) {
@@ -27,13 +31,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
+    console.log('Searching for user with email:', email.toLowerCase());
     const user = await User.findOne({ email: email.toLowerCase() });
+    console.log('User found:', !!user);
+
     if (!user) {
+      console.log('User not found');
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 400 }
       );
     }
+
+    console.log('User data:', { id: user._id, email: user.email, isAdmin: user.isAdmin });
 
     // Check if user is banned
     if (user.isBanned) {
@@ -119,6 +129,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Login error:', error);
+    console.error('Error stack:', error.stack);
 
     // Provide more specific error messages
     if (error.name === 'ValidationError') {
