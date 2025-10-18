@@ -17,6 +17,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
     // Find user
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
@@ -114,7 +123,7 @@ export async function POST(request: NextRequest) {
     // Provide more specific error messages
     if (error.name === 'ValidationError') {
       return NextResponse.json(
-        { error: 'Invalid data provided' },
+        { error: 'Invalid data provided: ' + Object.values(error.errors).map((e: any) => e.message).join(', ') },
         { status: 400 }
       );
     }

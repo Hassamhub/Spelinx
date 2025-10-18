@@ -114,7 +114,8 @@ async function createAdminUserIfNotExists() {
       return;
     }
 
-    const hashedPassword = await import('bcryptjs').then(bcrypt => bcrypt.hash('admin123', 10));
+    const bcrypt = await import('bcryptjs');
+    const hashedPassword = await bcrypt.default.hash('admin123', 10);
 
     const adminUser = new User({
       username: 'admin',
