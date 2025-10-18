@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure user has isAdmin field (for backward compatibility)
+    if (user.isAdmin === undefined) {
+      user.isAdmin = false;
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
@@ -49,9 +54,9 @@ export async function POST(request: NextRequest) {
         id: user._id,
         email: user.email,
         username: user.username,
-        role: user.role,
-        isAdmin: user.isAdmin,
-        isPremium: user.isPremium,
+        role: user.role || 'user',
+        isAdmin: user.isAdmin || false,
+        isPremium: user.isPremium || false,
         premiumExpiresAt: user.premiumExpiresAt
       },
       process.env.JWT_SECRET || 'dev_secret',
@@ -77,19 +82,19 @@ export async function POST(request: NextRequest) {
         id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role,
-        isAdmin: user.isAdmin,
-        isPremium: user.isPremium,
+        role: user.role || 'user',
+        isAdmin: user.isAdmin || false,
+        isPremium: user.isPremium || false,
         premiumExpiresAt: user.premiumExpiresAt,
         avatar: user.avatar,
         theme: user.theme,
         banner: user.banner
       },
       wallet: {
-        balance: wallet.balance,
-        totalDeposits: wallet.totalDeposits,
-        totalWithdrawals: wallet.totalWithdrawals,
-        transactions: wallet.transactions
+        balance: wallet.balance || 0,
+        totalDeposits: wallet.totalDeposits || 0,
+        totalWithdrawals: wallet.totalWithdrawals || 0,
+        transactions: wallet.transactions || []
       }
     });
 

@@ -96,9 +96,38 @@ export async function connectDB() {
 
     await mongoose.connect(MONGODB_URI, options);
     console.log('Connected to MongoDB');
+
+    // Create admin user if it doesn't exist
+    await createAdminUserIfNotExists();
   } catch (error) {
     console.error('MongoDB connection error:', error);
     throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// Create default admin user
+async function createAdminUserIfNotExists() {
+  try {
+    const adminExists = await User.findOne({ isAdmin: true });
+    if (adminExists) {
+      console.log('Admin user already exists');
+      return;
+    }
+
+    const hashedPassword = await import('bcryptjs').then(bcrypt => bcrypt.hash('admin123', 10));
+
+    const adminUser = new User({
+      username: 'admin',
+      email: 'admin@spelinx.com',
+      password: hashedPassword,
+      isAdmin: true,
+      referralCode: 'SPELINXADMIN'
+    });
+
+    await adminUser.save();
+    console.log('Admin user created with email: admin@spelinx.com and password: admin123');
+  } catch (error) {
+    console.error('Error creating admin user:', error);
   }
 }
 
