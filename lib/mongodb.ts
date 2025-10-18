@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema({
   xp: { type: Number, default: 0 },
   walletBalance: { type: Number, default: 0 },
   totalEarnings: { type: Number, default: 0 },
-  referralCode: { type: String, required: true, unique: true },
+  referralCode: { type: String, unique: true },
   referredBy: { type: String },
   isPremium: { type: Boolean, default: false },
   premiumExpiresAt: { type: Date },
@@ -117,20 +117,15 @@ async function createAdminUserIfNotExists() {
     const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.default.hash('admin123', 10);
 
-    // Create admin user without required fields first
-    const tempAdminUser = new User({
+    const adminUser = new User({
       username: 'admin',
       email: 'admin@spelinx.com',
       password: hashedPassword,
-      isAdmin: true
+      isAdmin: true,
+      referralCode: 'SPELINXADMIN'
     });
 
-    await tempAdminUser.save();
-
-    // Now set the referral code
-    tempAdminUser.referralCode = 'SPELINXADMIN';
-    await tempAdminUser.save();
-
+    await adminUser.save();
     console.log('Admin user created with email: admin@spelinx.com and password: admin123');
   } catch (error) {
     console.error('Error creating admin user:', error);
