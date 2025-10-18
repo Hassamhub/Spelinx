@@ -117,15 +117,20 @@ async function createAdminUserIfNotExists() {
     const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.default.hash('admin123', 10);
 
-    const adminUser = new User({
+    // Create admin user without required fields first
+    const tempAdminUser = new User({
       username: 'admin',
       email: 'admin@spelinx.com',
       password: hashedPassword,
-      isAdmin: true,
-      referralCode: 'SPELINXADMIN'
+      isAdmin: true
     });
 
-    await adminUser.save();
+    await tempAdminUser.save();
+
+    // Now set the referral code
+    tempAdminUser.referralCode = 'SPELINXADMIN';
+    await tempAdminUser.save();
+
     console.log('Admin user created with email: admin@spelinx.com and password: admin123');
   } catch (error) {
     console.error('Error creating admin user:', error);
