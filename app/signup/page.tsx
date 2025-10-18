@@ -13,6 +13,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -29,7 +30,7 @@ export default function SignupPage() {
     }
 
     try {
-      const response = await authAPI.register({ username, email, password })
+      const response = await authAPI.register({ username, email, password, referralCode: referralCode || undefined })
       localStorage.setItem('spelinx_token', response.data.token)
       router.push('/')
     } catch (err: any) {
@@ -91,6 +92,17 @@ export default function SignupPage() {
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
                   placeholder="Create a password"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-2">Referral Code (Optional)</label>
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                  placeholder="Enter referral code to get bonus"
                 />
               </div>
 
