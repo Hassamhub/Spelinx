@@ -59,8 +59,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
+    console.log('Verifying password...');
+    console.log('Stored hash:', user.password.substring(0, 20) + '...');
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', isValidPassword);
+
     if (!isValidPassword) {
+      console.log('Password verification failed');
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 400 }
@@ -88,10 +93,15 @@ export async function POST(request: NextRequest) {
     await user.save();
 
     // Get wallet data
+    console.log('Getting wallet data...');
     let wallet = await Wallet.findOne({ userId: user._id });
+    console.log('Wallet found:', !!wallet);
+
     if (!wallet) {
+      console.log('Creating new wallet...');
       wallet = new Wallet({ userId: user._id });
       await wallet.save();
+      console.log('Wallet created');
     }
 
     // Return response
