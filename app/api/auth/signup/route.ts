@@ -43,13 +43,12 @@ export async function POST(request: NextRequest) {
     const newUser = new User({
       username: username.trim(),
       email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      referralCode: `SPELINX${tempId.slice(-6).toUpperCase()}`
+      password: hashedPassword
     });
 
     await newUser.save();
 
-    // Update referral code with actual ID
+    // Set referral code after save to avoid validation issues
     newUser.referralCode = `SPELINX${newUser._id.toString().slice(-6).toUpperCase()}`;
     await newUser.save();
 
