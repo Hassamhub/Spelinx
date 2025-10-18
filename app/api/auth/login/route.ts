@@ -5,9 +5,9 @@ import { connectDB, User, Wallet } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const { email, password } = await request.json();
+
+    await connectDB();
 
     // Validate input
     if (!email || !password) {
@@ -64,12 +64,11 @@ export async function POST(request: NextRequest) {
     await user.save();
 
     // Get wallet data
-    const wallet = await Wallet.findOne({ userId: user._id }) || {
-      inx: 0,
-      xp: 0,
-      level: 1,
-      lastCheckIn: null
-    };
+    let wallet = await Wallet.findOne({ userId: user._id });
+    if (!wallet) {
+      wallet = new Wallet({ userId: user._id });
+      await wallet.save();
+    }
 
     // Return response
     const response = NextResponse.json({
@@ -87,10 +86,10 @@ export async function POST(request: NextRequest) {
         banner: user.banner
       },
       wallet: {
-        inx: wallet.inx,
-        xp: wallet.xp,
-        level: wallet.level,
-        lastCheckIn: wallet.lastCheckIn ?? null
+        balance: wallet.balance,
+        totalDeposits: wallet.totalDeposits,
+        totalWithdrawals: wallet.totalWithdrawals,
+        transactions: wallet.transactions
       }
     });
 

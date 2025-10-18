@@ -5,9 +5,9 @@ import { connectDB, User, Wallet, Referral } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const { username, email, password, referralCode } = await request.json();
+
+    await connectDB();
 
     // Validate required fields
     if (!username || !email || !password) {
@@ -36,13 +36,21 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate temporary ID for referral code
+    const tempId = Math.random().toString(36).substring(2, 15);
+
     // Create user
     const newUser = new User({
       username: username.trim(),
       email: email.toLowerCase().trim(),
-      password: hashedPassword
+      password: hashedPassword,
+      referralCode: `SPELINX${tempId.slice(-6).toUpperCase()}`
     });
 
+    await newUser.save();
+
+    // Update referral code with actual ID
+    newUser.referralCode = `SPELINX${newUser._id.toString().slice(-6).toUpperCase()}`;
     await newUser.save();
 
     // Generate JWT token
@@ -62,9 +70,9 @@ export async function POST(request: NextRequest) {
         // Extract referrer ID from code - assuming SPELINX + last 6 chars of user ID uppercase
         const referrerIdPart = referralCode.replace('SPELINX', '').toLowerCase();
 
-        // Find user whose ID ends with referrerIdPart (case insensitive)
+        // Find user by referral code
         const referrerUser = await User.findOne({
-          _id: { $regex: new RegExp(referrerIdPart + '$', 'i') }
+          referralCode: referralCode.toUpperCase()
         });
 
         if (referrerUser) {
@@ -84,12 +92,12 @@ export async function POST(request: NextRequest) {
           // Reward referrer
           const referrerWallet = await Wallet.findOne({ userId: referrerId });
           if (referrerWallet) {
-            referrerWallet.inx += 100; // 100 INX reward
+            referrerWallet.balance += 100; // 100 INX reward
             await referrerWallet.save();
           }
 
           // Reward new user
-          wallet.inx += 50; // 50 INX bonus
+          wallet.balance += 50; // 50 INX bonus
           await wallet.save();
         }
       } catch (referralError) {
@@ -106,9 +114,9 @@ export async function POST(request: NextRequest) {
         email: newUser.email
       },
       wallet: {
-        inx: wallet.inx,
-        xp: wallet.xp,
-        level: wallet.level
+        balance: wallet.balance,
+        totalDeposits: wallet.totalDeposits,
+        totalWithdrawals: wallet.totalWithdrawals
       }
     }, { status: 201 });
 

@@ -87,11 +87,18 @@ export async function connectDB() {
       return;
     }
 
-    await mongoose.connect(MONGODB_URI);
+    const options = {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    };
+
+    await mongoose.connect(MONGODB_URI, options);
     console.log('Connected to MongoDB');
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    throw error;
+    throw new Error(`Database connection failed: ${error.message}`);
   }
 }
 
