@@ -281,7 +281,7 @@ export default function Game2048() {
             {/* Game Board */}
             <div className="flex justify-center mb-6">
               <div
-                className="grid grid-cols-4 gap-2 p-4 bg-gray-800 rounded-lg touch-none"
+                className="grid grid-cols-4 gap-2 p-4 bg-gray-800 rounded-lg touch-none max-w-md w-full"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
               >

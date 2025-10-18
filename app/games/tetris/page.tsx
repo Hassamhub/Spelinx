@@ -392,7 +392,11 @@ export default function TetrisGame() {
               <div className="glass-premium rounded-2xl p-6 border border-white/20">
                 <div className="flex justify-center mb-4">
                   <div
-                    className="grid gap-0 border-2 border-white/20 rounded-lg overflow-hidden touch-none"
+                    className="grid gap-0 border-2 border-white/20 rounded-lg overflow-hidden touch-none max-w-full"
+                    style={{
+                      gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
+                      aspectRatio: `${BOARD_WIDTH}/${BOARD_HEIGHT}`
+                    }}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                   >

@@ -275,8 +275,9 @@ export default function SnakeGame() {
                 onTouchEnd={handleTouchEnd}
                 style={{
                   gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-                  width: '400px',
-                  height: '400px'
+                  width: 'min(400px, 90vw)',
+                  height: 'min(400px, 90vw)',
+                  aspectRatio: '1'
                 }}
               >
                 {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, index) => {
@@ -290,15 +291,20 @@ export default function SnakeGame() {
                   return (
                     <div
                       key={index}
-                      className={`w-5 h-5 border border-gray-700 ${
+                      className={`border border-gray-700 ${
                         isSnakeHead
                           ? 'bg-spelinx-primary'
                           : isSnakeBody
                           ? 'bg-spelinx-secondary'
                           : isFood
-                          ? 'bg-red-500'
+                          ? 'bg-red-500 rounded-full animate-pulse'
                           : 'bg-black/50'
                       }`}
+                      style={{
+                        width: 'calc(min(400px, 90vw) / 20)',
+                        height: 'calc(min(400px, 90vw) / 20)',
+                        boxShadow: isFood ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none'
+                      }}
                     />
                   )
                 })}
