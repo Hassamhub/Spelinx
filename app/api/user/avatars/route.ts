@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { connectDB, User, StoreItem } from '@/lib/mongodb'
 
+// Ensure this API stays dynamic (it reads request headers for auth)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB()
