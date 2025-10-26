@@ -48,6 +48,10 @@ export default function StorePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userThemes, setUserThemes] = useState<Theme[]>([])
   const [isLazyLoading, setIsLazyLoading] = useState(false)
+  const [ownedAvatars, setOwnedAvatars] = useState<string[]>([])
+  const [ownedSkins, setOwnedSkins] = useState<string[]>([])
+  const [showThemePreview, setShowThemePreview] = useState(false)
+  const [previewTheme, setPreviewTheme] = useState<any>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -135,11 +139,44 @@ export default function StorePage() {
         })) || [])
       } else {
         const response = await storeAPI.getItems(selectedCategory !== 'all' ? selectedCategory : undefined)
-        setItems(response.data.items || [])
+        const list = response.data.items || []
+        if (selectedCategory === 'avatars') {
+          await loadOwnedAvatars()
+          setItems(list.map((it: any) => ({ ...it, owned: ownedAvatars.includes(it._id) })))
+        } else if (selectedCategory === 'skins') {
+          await loadOwnedSkins()
+          setItems(list.map((it: any) => ({ ...it, owned: ownedSkins.includes(it._id) })))
+        } else {
+          setItems(list)
+        }
       }
     } catch (error) {
       console.error('Failed to load store items:', error)
     }
+  }
+
+  const loadOwnedAvatars = async () => {
+    try {
+      const token = localStorage.getItem('spelinx_token')
+      if (!token) return
+      const r = await fetch('/api/user/avatars', { headers: { Authorization: `Bearer ${token}` } })
+      if (r.ok) {
+        const d = await r.json()
+        setOwnedAvatars((d.items || []).map((x: any) => x._id))
+      }
+    } catch {}
+  }
+
+  const loadOwnedSkins = async () => {
+    try {
+      const token = localStorage.getItem('spelinx_token')
+      if (!token) return
+      const r = await fetch('/api/user/skins', { headers: { Authorization: `Bearer ${token}` } })
+      if (r.ok) {
+        const d = await r.json()
+        setOwnedSkins((d.items || []).map((x: any) => x._id))
+      }
+    } catch {}
   }
 
 
@@ -338,6 +375,39 @@ export default function StorePage() {
                         <span className="text-2xl">🎨</span>
                       </div>
                     )}
+
+      {showThemePreview && previewTheme && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white">{previewTheme.name} Preview</h3>
+              <button onClick={() => setShowThemePreview(false)} className="text-gray-400 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            {previewTheme.image && (
+              <img src={previewTheme.image} alt="Preview" className="w-full h-48 object-cover rounded-xl mb-4" />
+            )}
+            <div
+              className="rounded-xl p-6 border border-white/10"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--theme-primary, #111827), var(--theme-secondary, #1f2937))',
+                // Fallbacks if themeFile missing keys
+                // CSS variables applied inline for preview scope only
+                ...(previewTheme.themeFile || {}),
+              } as any}
+            >
+              <div className="text-white text-2xl font-bold mb-2">Sample Heading</div>
+              <div className="text-gray-200 mb-4">Sample paragraph demonstrating theme colors.</div>
+              <div className="flex space-x-2">
+                <button className="px-4 py-2 rounded-lg bg-spelinx-primary text-white">Primary</button>
+                <button className="px-4 py-2 rounded-lg bg-spelinx-secondary text-white">Secondary</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
                     {item.owned && (
                       <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Owned</div>
                     )}
@@ -369,6 +439,17 @@ export default function StorePage() {
                           </>
                         )}
                       </div>
+                      {item.category === 'themes' && (
+                        <button
+                          onClick={() => {
+                            setPreviewTheme(item)
+                            setShowThemePreview(true)
+                          }}
+                          className="mr-2 px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                        >
+                          Preview
+                        </button>
+                      )}
                       <button
                         onClick={() => handlePurchase(item._id)}
                         onTouchStart={() => handlePurchase(item._id)}
@@ -384,7 +465,7 @@ export default function StorePage() {
                     </div>
                   </div>
                 </motion.div>
-              ))
+              ))}
             )}
 
           {items.length === 0 && !loading && (

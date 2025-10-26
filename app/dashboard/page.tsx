@@ -26,9 +26,13 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const [ownedAvatars, setOwnedAvatars] = useState<any[]>([])
+  const [ownedSkins, setOwnedSkins] = useState<any[]>([])
+  const [ownedThemes, setOwnedThemes] = useState<any[]>([])
 
   useEffect(() => {
     loadUserProfile()
+    loadPurchases()
   }, [])
 
   const loadUserProfile = async () => {
@@ -41,6 +45,7 @@ export default function DashboardPage() {
         joinedAt: apiUser.joinedAt || apiUser.createdAt || new Date().toISOString(),
         lastLogin: apiUser.lastLogin || apiUser.createdAt || new Date().toISOString(),
       }
+
 
       // If referralCode is missing, fetch it from referral API
       if (!normalized.referralCode) {
@@ -62,6 +67,33 @@ export default function DashboardPage() {
       router.push('/login')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPurchases = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('spelinx_token') : null
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+      // Avatars
+      const a = await fetch('/api/user/avatars', { headers })
+      if (a.ok) {
+        const d = await a.json()
+        setOwnedAvatars(d.items || [])
+      }
+      // Skins
+      const s = await fetch('/api/user/skins', { headers })
+      if (s.ok) {
+        const d = await s.json()
+        setOwnedSkins(d.items || [])
+      }
+      // Themes
+      const t = await fetch('/api/user/themes', { headers })
+      if (t.ok) {
+        const d = await t.json()
+        setOwnedThemes(d.themes || [])
+      }
+    } catch (e) {
+      // non-blocking
     }
   }
 

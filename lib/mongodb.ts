@@ -22,6 +22,8 @@ const UserSchema = new mongoose.Schema({
   banReason: { type: String },
   lastLogin: { type: Date },
   loginCount: { type: Number, default: 0 },
+  ownedAvatars: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoreItem', default: [] }],
+  ownedSkins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoreItem', default: [] }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

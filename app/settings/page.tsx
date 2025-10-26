@@ -118,13 +118,19 @@ export default function SettingsPage() {
 
   const loadAvatars = async () => {
     try {
-      const response = await fetch('/api/store?category=avatars')
+      const token = localStorage.getItem('spelinx_token')
+      const response = await fetch('/api/user/avatars', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+      })
       const data = await response.json()
-      if (data.success) {
-        setAvatars(data.items)
+      if (response.ok && (data.items || data.avatars)) {
+        setAvatars(data.items || data.avatars)
+      } else {
+        setAvatars([])
       }
     } catch (error) {
       console.error('Failed to load avatars:', error)
+      setAvatars([])
     } finally {
       setLoadingAvatars(false)
     }
@@ -342,7 +348,7 @@ export default function SettingsPage() {
                       <option value="" className="bg-gray-800 text-white">Default Avatar</option>
                       {avatars.map((avatar) => (
                         <option key={avatar._id} value={avatar.image || avatar._id} className="bg-gray-800 text-white">
-                          {avatar.name} (₹{avatar.price})
+                          {avatar.name}
                         </option>
                       ))}
                       <option value="custom" className="bg-gray-800 text-white">Custom URL</option>

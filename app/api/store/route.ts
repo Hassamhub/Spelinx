@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let finalAmount, itemName, itemCategory;
+    let finalAmount, itemName, itemCategory, itemDoc: any = null;
 
     if (isPremiumItem) {
       const plan = premiumPlans[premiumType as keyof typeof premiumPlans];
@@ -132,9 +132,13 @@ export async function POST(request: NextRequest) {
     } else {
       // Regular store item
       const item = await StoreItem.findById(itemId);
+      if (!item) {
+        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      }
       finalAmount = item.price;
       itemName = item.name;
       itemCategory = item.category;
+      itemDoc = item;
     }
 
     // Generate unique transaction ID
@@ -170,6 +174,19 @@ export async function POST(request: NextRequest) {
       amount: finalAmount,
       transactionId
     });
+
+    // Create or upsert a Transaction so admin can approve it later
+    const txn = new Transaction({
+      userId: decoded.id,
+      transactionId,
+      type: 'store_payment',
+      amount: finalAmount,
+      description: isPremiumItem
+        ? `Premium plan ${itemName} payment - ₹${finalAmount}`
+        : `${itemCategory === 'themes' ? 'Theme' : 'Store'} item ${itemName} payment - ₹${finalAmount}`,
+      status: 'pending',
+    });
+    await txn.save();
 
     return NextResponse.json({
       success: true,

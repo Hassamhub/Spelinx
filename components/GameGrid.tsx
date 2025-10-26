@@ -77,7 +77,7 @@ const games = [
 
 export default function GameGrid() {
   return (
-    <section className="py-20 px-6">
+    <section className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="container mx-auto">
         {/* Section Header */}
         <motion.div
@@ -85,20 +85,20 @@ export default function GameGrid() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-3xl md:text-5xl font-bold mb-3 sm:mb-4">
             <span className="bg-gradient-to-r from-spelinx-primary to-spelinx-secondary bg-clip-text text-transparent">
               Featured Games
             </span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-300 max-w-2xl mx-auto">
             Discover our collection of premium games designed for endless entertainment
           </p>
         </motion.div>
 
         {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
           {games.map((game, index) => (
             <motion.div
               key={game.id}
@@ -110,9 +110,9 @@ export default function GameGrid() {
               className="group"
             >
               <Card className="glass-premium border-white/20 hover:glow-premium transition-all duration-500 cursor-pointer h-full">
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-3 sm:pb-4">
                   <div className="flex items-start justify-between">
-                    <div className="text-5xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                    <div className="text-4xl sm:text-5xl mb-2 group-hover:scale-110 transition-transform duration-300">
                       {game.icon}
                     </div>
                     {game.premium && (
@@ -121,18 +121,18 @@ export default function GameGrid() {
                       </div>
                     )}
                   </div>
-                  <CardTitle className="text-xl font-bold group-hover:text-gradient transition-all duration-300">
+                  <CardTitle className="text-lg sm:text-xl font-bold group-hover:text-gradient transition-all duration-300">
                     {game.name}
                   </CardTitle>
-                  <CardDescription className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+                  <CardDescription className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300 text-sm sm:text-base">
                     {game.description}
                   </CardDescription>
                 </CardHeader>
 
                 <CardContent className="pt-0">
                   {/* Game Stats */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
                       <div className="flex items-center space-x-1 bg-white/5 rounded-full px-2 py-1">
                         <Star className="w-4 h-4 text-spelinx-accent fill-current" />
                         <span className="text-sm text-gray-300 font-medium">{game.rating}</span>
@@ -164,7 +164,7 @@ export default function GameGrid() {
                       <Button
                         variant="gradient"
                         size="sm"
-                        className="group/btn hover:scale-105 transition-transform duration-200"
+                        className="group/btn hover:scale-105 transition-transform duration-200 min-h-[44px] min-w-[44px] touch-manipulation"
                       >
                         <Play className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
                         Play
@@ -183,13 +183,13 @@ export default function GameGrid() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mt-12"
+          className="text-center mt-10 sm:mt-12"
         >
           <Link href="/games">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 glass rounded-lg text-white font-semibold hover:glow-effect transition-all duration-300"
+              className="px-6 sm:px-8 py-3 sm:py-4 glass rounded-lg text-white font-semibold hover:glow-effect transition-all duration-300 min-h-[44px] min-w-[44px]"
             >
               View All Games
             </motion.button>

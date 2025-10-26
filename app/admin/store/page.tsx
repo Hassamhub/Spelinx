@@ -88,23 +88,9 @@ export default function StoreManagement() {
   const handleAddItem = async () => {
     try {
       let imageUrl = ''
-
-      if (imageFile) {
-        // Upload image
-        const formData = new FormData()
-        formData.append('image', imageFile)
-
-        const uploadResponse = await fetch('/api/upload/store-image', {
-          method: 'POST',
-          body: formData
-        })
-
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json()
-          imageUrl = uploadData.url
-        } else {
-          throw new Error('Failed to upload image')
-        }
+      // Use base64 data URL directly to be compatible with read-only deployments (e.g., Vercel)
+      if (imagePreview) {
+        imageUrl = imagePreview
       }
 
       if (selectedCategory === 'themes') {

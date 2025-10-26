@@ -71,8 +71,38 @@ export async function POST(request: NextRequest, { params }: { params: { payment
             }
           }
         } else {
-          // Handle regular store items if needed (e.g., for avatars)
-          // For now, assume themes are handled separately
+          // Handle regular store items (avatars/skins) using transactionId format: STORE_<ts>_<userId>_<itemId>
+          // Extract itemId from transactionId when possible
+          const parts = (payment.transactionId || '').split('_')
+          const candidateItemId = parts.length >= 4 ? parts[3] : undefined
+          let item: any = null
+          if (candidateItemId) {
+            item = await StoreItem.findById(candidateItemId).session(session)
+          }
+          // Fallback: try to infer from description
+          if (!item && payment.description) {
+            const nameMatch = payment.description.match(/item (.+?) payment|purchase -/i)
+            if (nameMatch?.[1]) {
+              item = await StoreItem.findOne({ name: nameMatch[1] }).session(session)
+            }
+          }
+
+          if (item) {
+            // Update user's owned items based on category
+            const user = await User.findById(payment.userId).session(session)
+            if (user) {
+              if (item.category === 'avatars') {
+                if (!user.ownedAvatars?.some((id: any) => id.equals(item._id))) {
+                  user.ownedAvatars = [...(user.ownedAvatars || []), item._id]
+                }
+              } else if (item.category === 'skins') {
+                if (!user.ownedSkins?.some((id: any) => id.equals(item._id))) {
+                  user.ownedSkins = [...(user.ownedSkins || []), item._id]
+                }
+              }
+              await user.save({ session })
+            }
+          }
         }
       });
     } finally {

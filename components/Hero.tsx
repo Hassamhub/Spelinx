@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button'
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 overflow-hidden pt-24">
-      {/* Enhanced Glassmorphism Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-spelinx-dark via-spelinx-gray/50 to-spelinx-dark">
-        {/* Glass overlay */}
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      {/* Background accents (lighter, blended) */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Subtle vignette rather than a solid overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent"></div>
 
         {/* Animated floating orbs */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-spelinx-primary/30 to-spelinx-secondary/30 rounded-full blur-3xl animate-float particle-float"></div>
@@ -105,6 +105,9 @@ export default function Hero() {
             Learn More
           </Button>
         </div>
+
+        {/* Bottom fade to blend into next section */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-black/10"></div>
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
