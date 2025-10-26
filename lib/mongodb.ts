@@ -27,8 +27,6 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Indexes for faster lookups
-UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ referralCode: 1 }, { unique: true });
 UserSchema.index({ referredBy: 1 });
 
 const WalletSchema = new mongoose.Schema({

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic'
 import { connectDB, User } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest) {

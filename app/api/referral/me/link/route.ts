@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic'
 import jwt from 'jsonwebtoken';
 import { connectDB, User, Referral, Wallet } from '@/lib/mongodb';
 

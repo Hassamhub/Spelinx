@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Button } from '@/components/ui/button'
 import { authAPI } from '@/lib/api'
 
-export default function SignupPage() {
+function SignupContent() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -172,5 +172,13 @@ export default function SignupPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupContent />
+    </Suspense>
   )
 }
