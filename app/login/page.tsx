@@ -23,6 +23,7 @@ export default function LoginPage() {
     try {
       const response = await authAPI.login({ email, password })
       localStorage.setItem('spelinx_token', response.data.token)
+      localStorage.setItem('spelinx_user', JSON.stringify(response.data.user))
 
       // Check if user is admin and redirect accordingly
       const user = response.data.user

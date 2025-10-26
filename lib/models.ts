@@ -5,14 +5,23 @@ export interface User {
   email: string;
   password: string;
   avatar?: string;
+  theme?: string;
+  font?: string;
   level: number;
   xp: number;
   walletBalance: number;
   totalEarnings: number;
-  referralCode: string;
+  referralCode?: string;
   referredBy?: string;
+  referralCount: number;
+  credits: number;
   isPremium: boolean;
   premiumExpiresAt?: Date;
+  isAdmin: boolean;
+  isBanned: boolean;
+  banReason?: string;
+  lastLogin?: Date;
+  loginCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,10 +42,72 @@ export interface Wallet {
 export interface Referral {
   _id?: string;
   referrerId: string;
-  referredId: string;
-  referralCode: string;
-  rewardEarned: number;
+  refereeId: string;
+  referredAt: Date;
+  rewardGiven: boolean;
+  status: 'pending' | 'completed';
+  rewardType: string;
   createdAt: Date;
+  updatedAt: Date;
+}
+
+// ReferralConfig model
+export interface ReferralConfig {
+  _id?: string;
+  rewardPerReferral: number;
+  themeUnlockAfter: number;
+  bonusCredits: number;
+  rewardType: 'credits' | 'theme' | 'badge';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// AuditLog model
+export interface AuditLog {
+  _id?: string;
+  userId?: string;
+  action: string;
+  details?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: Date;
+}
+
+// Theme model
+export interface Theme {
+  _id?: string;
+  name: string;
+  description: string;
+  previewUrl?: string;
+  themeFile: Record<string, string>; // JSON object with color variables
+  price: number;
+  scope: 'full_site' | 'games_only';
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// UserThemes model
+export interface UserThemes {
+  _id?: string;
+  userId: string;
+  themeId: string;
+  active: boolean;
+  purchasedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ThemeSale model
+export interface ThemeSale {
+  _id?: string;
+  userId: string;
+  themeId: string;
+  amount: number;
+  transactionId: string;
+  purchasedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // GameHistory model
@@ -55,7 +126,7 @@ export interface GameHistory {
 export interface Transaction {
   _id?: string;
   userId: string;
-  type: 'deposit' | 'withdrawal' | 'game_reward' | 'referral_reward' | 'premium_payment';
+  type: 'deposit' | 'withdrawal' | 'game_reward' | 'referral_reward' | 'premium_payment' | 'store_payment';
   amount: number;
   status: 'pending' | 'completed' | 'failed';
   description?: string;

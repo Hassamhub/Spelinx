@@ -36,6 +36,13 @@ interface UserData {
   premiumExpiresAt?: string
   avatar?: string
   theme?: string
+  level: number
+  xp: number
+  walletBalance: number
+  totalEarnings: number
+  loginCount: number
+  referralCode?: string
+  referredBy?: string
 }
 
 export default function UsersManagement() {
@@ -45,7 +52,7 @@ export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(true)
 
   useEffect(() => {
     checkAdminAccess()
@@ -57,6 +64,7 @@ export default function UsersManagement() {
     const userData = localStorage.getItem('spelinx_user')
 
     if (!token || !userData) {
+      setIsAdmin(false)
       router.push('/login')
       return
     }
@@ -64,11 +72,13 @@ export default function UsersManagement() {
     try {
       const user = JSON.parse(userData)
       if (!user.isAdmin) {
+        setIsAdmin(false)
         router.push('/')
         return
       }
       setIsAdmin(true)
     } catch (error) {
+      setIsAdmin(false)
       router.push('/login')
     }
   }
@@ -90,8 +100,14 @@ export default function UsersManagement() {
     }
   }
 
-  const handleBanUser = async (userId: string, currentBanStatus: boolean) => {
+  const handleBanUser = async (userId: string, currentBanStatus: boolean, username: string) => {
     const action = currentBanStatus ? 'unban' : 'ban'
+    const actionText = currentBanStatus ? 'unban' : 'ban'
+
+    if (!confirm(`Are you sure you want to ${actionText} ${username || 'Unknown'}?`)) {
+      return
+    }
+
     const reason = currentBanStatus ? '' : prompt('Enter ban reason:')
 
     if (!currentBanStatus && (!reason || reason.trim().length < 5)) {
@@ -100,24 +116,32 @@ export default function UsersManagement() {
     }
 
     try {
-      await adminAPI.banUser(userId, currentBanStatus ? '' : (reason || ''))
-      loadUsers() // Refresh data
-      alert(`User ${action}ned successfully!`)
+      const response = await adminAPI.banUser(userId, currentBanStatus ? '' : (reason || ''))
+      // Update local state immediately
+      const updatedUser = response.data.user
+
+      // Update the user in the local state with all existing fields
+      setUsers(users.map(u =>
+        u._id === updatedUser._id
+          ? { ...u, ...updatedUser }
+          : u
+      ))
+      alert(`User ${username || 'Unknown'} ${actionText}ned successfully!`)
     } catch (error) {
-      console.error(`Failed to ${action} user:`, error)
-      alert(`Failed to ${action} user`)
+      console.error(`Failed to ${actionText} user:`, error)
+      alert(`Failed to ${actionText} user`)
     }
   }
 
   const handleChangePassword = async (userId: string, username: string) => {
-    const newPassword = prompt(`Enter new password for ${username}:`)
+    const newPassword = prompt(`Enter new password for ${username || 'Unknown'}:`)
 
     if (!newPassword || newPassword.length < 6) {
       alert('Password must be at least 6 characters long')
       return
     }
 
-    if (!confirm(`Are you sure you want to change the password for ${username}?`)) {
+    if (!confirm(`Are you sure you want to change the password for ${username || 'Unknown'}?`)) {
       return
     }
 
@@ -130,16 +154,51 @@ export default function UsersManagement() {
     }
   }
 
+  const handleMakeAdmin = async (userId: string, username: string) => {
+    if (!confirm(`Are you sure you want to make ${username || 'Unknown'} an admin?`)) {
+      return
+    }
+
+    try {
+      await adminAPI.updateUser(userId, { isAdmin: true })
+      loadUsers() // Refresh data
+      alert(`User ${username || 'Unknown'} is now an admin!`)
+    } catch (error) {
+      console.error('Failed to make admin:', error)
+      alert('Failed to make admin')
+    }
+  }
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = !searchTerm ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesFilter = statusFilter === 'all' ||
-      (statusFilter === 'banned' && user.isBanned) ||
-      (statusFilter === 'premium' && user.isPremium) ||
-      (statusFilter === 'admin' && user.isAdmin) ||
-      (statusFilter === 'active' && !user.isBanned)
+    let matchesFilter = false
+    switch (statusFilter) {
+      case 'all':
+        matchesFilter = true
+        break
+      case 'banned':
+        matchesFilter = user.isBanned
+        break
+      case 'premium':
+        matchesFilter = user.isPremium
+        break
+      case 'admin':
+        matchesFilter = user.isAdmin
+        break
+      case 'active':
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        matchesFilter = !user.isBanned && user.lastLogin ? new Date(user.lastLogin) > oneDayAgo : false
+        break
+      case 'live':
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        matchesFilter = user.lastLogin ? new Date(user.lastLogin) > thirtyDaysAgo : false
+        break
+      default:
+        matchesFilter = true
+    }
 
     return matchesSearch && matchesFilter
   })
@@ -231,20 +290,21 @@ export default function UsersManagement() {
               placeholder="Search by username or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+              className="pl-10 pr-4 py-2 w-full bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-spelinx-primary"
+            className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-spelinx-primary"
           >
             <option value="all">All Users</option>
             <option value="active">Active</option>
             <option value="banned">Banned</option>
             <option value="premium">Premium</option>
             <option value="admin">Admins</option>
+            <option value="live">Live Users (Last 30 Days)</option>
           </select>
         </motion.div>
 
@@ -263,7 +323,10 @@ export default function UsersManagement() {
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Role</th>
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Status</th>
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Premium</th>
-                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">Joined</th>
+                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">Level</th>
+                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">XP</th>
+                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">Wallet Balance</th>
+                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">Last Login</th>
                   <th className="text-left py-3 px-4 text-gray-300 font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -279,14 +342,14 @@ export default function UsersManagement() {
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-r from-spelinx-primary to-spelinx-secondary rounded-full flex items-center justify-center">
                           <span className="text-white font-bold text-sm">
-                            {user.username.charAt(0).toUpperCase()}
+                            {(user.username || 'User').charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <div className="font-semibold text-white">{user.username}</div>
+                          <div className="font-semibold text-white">{user.username || 'Unknown'}</div>
                           <div className="text-sm text-gray-400 flex items-center">
                             <Mail className="w-3 h-3 mr-1" />
-                            {user.email}
+                            {user.email || 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -328,10 +391,13 @@ export default function UsersManagement() {
                         <span className="text-gray-400 text-sm">No</span>
                       )}
                     </td>
+                    <td className="py-4 px-4 text-white font-semibold">{user.level || 1}</td>
+                    <td className="py-4 px-4 text-white font-semibold">{(user.xp || 0).toLocaleString()}</td>
+                    <td className="py-4 px-4 text-white font-semibold">₹{(user.walletBalance || 0).toLocaleString()}</td>
                     <td className="py-4 px-4 text-gray-400">
                       <div className="flex items-center">
                         <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
                       </div>
                     </td>
                     <td className="py-4 px-4">
@@ -345,7 +411,7 @@ export default function UsersManagement() {
                                 ? "text-green-400 hover:text-green-300"
                                 : "text-red-400 hover:text-red-300"
                               }
-                              onClick={() => handleBanUser(user._id, user.isBanned)}
+                              onClick={() => handleBanUser(user._id, user.isBanned, user.username || 'Unknown')}
                             >
                               {user.isBanned ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                             </Button>
@@ -353,9 +419,17 @@ export default function UsersManagement() {
                               variant="ghost"
                               size="sm"
                               className="text-yellow-400 hover:text-yellow-300"
-                              onClick={() => handleChangePassword(user._id, user.username)}
+                              onClick={() => handleChangePassword(user._id, user.username || 'Unknown')}
                             >
                               <Key className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-purple-400 hover:text-purple-300"
+                              onClick={() => handleMakeAdmin(user._id, user.username || 'Unknown')}
+                            >
+                              <Crown className="w-4 h-4" />
                             </Button>
                           </>
                         )}
@@ -412,11 +486,11 @@ export default function UsersManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-300">Username</label>
-                    <p className="text-white text-lg">{selectedUser.username}</p>
+                    <p className="text-white text-lg">{selectedUser.username || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-300">Email</label>
-                    <p className="text-white">{selectedUser.email}</p>
+                    <p className="text-white">{selectedUser.email || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-300">Role</label>
@@ -435,8 +509,40 @@ export default function UsersManagement() {
                     </p>
                   </div>
                   <div>
+                    <label className="text-sm font-medium text-gray-300">Level</label>
+                    <p className="text-white">{selectedUser.level || 1}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">XP</label>
+                    <p className="text-white">{(selectedUser.xp || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Wallet Balance</label>
+                    <p className="text-white">₹{(selectedUser.walletBalance || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Total Earnings</label>
+                    <p className="text-white">₹{(selectedUser.totalEarnings || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Login Count</label>
+                    <p className="text-white">{selectedUser.loginCount || 0}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Referral Code</label>
+                    <p className="text-white">{selectedUser.referralCode || 'None'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Referred By</label>
+                    <p className="text-white">{selectedUser.referredBy || 'None'}</p>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium text-gray-300">Joined</label>
                     <p className="text-gray-300">{new Date(selectedUser.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">Last Login</label>
+                    <p className="text-gray-300">{selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : 'Never'}</p>
                   </div>
                 </div>
 
@@ -458,18 +564,26 @@ export default function UsersManagement() {
                   {!selectedUser.isAdmin && (
                     <>
                       <Button
-                        onClick={() => handleBanUser(selectedUser._id, selectedUser.isBanned)}
+                        onClick={() => handleBanUser(selectedUser._id, selectedUser.isBanned, selectedUser.username || 'Unknown')}
                         variant={selectedUser.isBanned ? "default" : "destructive"}
                         className={selectedUser.isBanned ? "bg-green-600 hover:bg-green-700" : ""}
                       >
                         {selectedUser.isBanned ? 'Unban User' : 'Ban User'}
                       </Button>
                       <Button
-                        onClick={() => handleChangePassword(selectedUser._id, selectedUser.username)}
+                        onClick={() => handleChangePassword(selectedUser._id, selectedUser.username || 'Unknown')}
                         variant="outline"
                       >
                         <Key className="w-4 h-4 mr-2" />
                         Change Password
+                      </Button>
+                      <Button
+                        onClick={() => handleMakeAdmin(selectedUser._id, selectedUser.username || 'Unknown')}
+                        variant="outline"
+                        className="bg-purple-600/20 border-purple-500/50 text-purple-400 hover:bg-purple-600/30"
+                      >
+                        <Crown className="w-4 h-4 mr-2" />
+                        Make Admin
                       </Button>
                     </>
                   )}

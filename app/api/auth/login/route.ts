@@ -7,6 +7,13 @@ export async function POST(request: NextRequest) {
   console.log('Login attempt received');
 
   try {
+    // In production, require JWT secret to be set
+    if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
     const { email, password } = await request.json();
     console.log('Login data:', { email, password: '***' });
 
@@ -60,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     // Verify password
     console.log('Verifying password...');
-    console.log('Stored hash:', user.password.substring(0, 20) + '...');
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log('Password valid:', isValidPassword);
 
@@ -84,13 +90,13 @@ export async function POST(request: NextRequest) {
         premiumExpiresAt: user.premiumExpiresAt
       },
       process.env.JWT_SECRET || 'dev_secret',
-      { expiresIn: '1h' }
+      { expiresIn: '7d' } // Extended to 7 days for better UX
     );
 
     // Update login tracking
     user.lastLogin = new Date();
     user.loginCount = (user.loginCount || 0) + 1;
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
     // Get wallet data
     console.log('Getting wallet data...');
@@ -132,8 +138,13 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 // 1 hour
+      maxAge: 60 * 60 * 24 * 7 // 7 days
     });
+
+    // Also set token in localStorage for frontend access (development only)
+    if (process.env.NODE_ENV !== 'production') {
+      response.headers.set('X-Set-LocalStorage', token);
+    }
 
     return response;
 

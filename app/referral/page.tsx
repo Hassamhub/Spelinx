@@ -5,21 +5,25 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import { authAPI } from '@/lib/api'
+import { authAPI, referralAPI } from '@/lib/api'
 import { Copy, Users, DollarSign, Gift, TrendingUp, CheckCircle, Crown } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 interface ReferralStats {
   referralCode: string
+  referralLink: string
   totalReferrals: number
   activeReferrals: number
   totalEarnings: number
   availableBalance: number
+  credits: number
   recentReferrals: Array<{
     username: string
     joinedAt: string
     isPremium: boolean
     earnings: number
   }>
+  needsAuth?: boolean
 }
 
 export default function ReferralPage() {
@@ -35,32 +39,37 @@ export default function ReferralPage() {
 
   const loadReferralStats = async () => {
     try {
-      // Get referral code from API
-      const codeResponse = await fetch('/api/referral/code')
-      const codeData = await codeResponse.json()
+      const token = localStorage.getItem('spelinx_token')
+      const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-      // Get referral stats from API
-      const statsResponse = await fetch('/api/referral/stats')
-      const statsData = await statsResponse.json()
+      // Get referral data from the new API
+      const response = await fetch('/api/referral/me/link', { headers })
+      const data = await response.json()
 
-      if (statsResponse.ok && codeResponse.ok) {
+      if (response.ok) {
         setStats({
-          referralCode: codeData.referralCode,
-          totalReferrals: statsData.totalReferrals || 0,
-          activeReferrals: statsData.completedReferrals || 0,
-          totalEarnings: statsData.totalEarned || 0,
-          availableBalance: (statsData.totalEarned || 0) * 0.5, // 50% available for withdrawal
-          recentReferrals: [] // For now, we'll keep this empty since we don't have detailed referral history
+          referralCode: data.referralCode,
+          referralLink: data.referralLink,
+          totalReferrals: data.referralCount,
+          activeReferrals: data.completedReferrals,
+          totalEarnings: data.totalRewards,
+          availableBalance: data.availableBalance,
+          credits: data.credits,
+          recentReferrals: [],
+          needsAuth: false
         })
       } else {
-        // Fallback to demo data if API fails
+        // No auth or error - show login CTA
         setStats({
-          referralCode: codeData.referralCode || 'SPELINX123',
+          referralCode: 'SPELINX123',
+          referralLink: 'https://spelinx.com/signup?ref=SPELINX123',
           totalReferrals: 0,
           activeReferrals: 0,
           totalEarnings: 0,
           availableBalance: 0,
-          recentReferrals: []
+          credits: 0,
+          recentReferrals: [],
+          needsAuth: true
         })
       }
     } catch (error) {
@@ -68,10 +77,12 @@ export default function ReferralPage() {
       // Fallback to demo data
       setStats({
         referralCode: 'SPELINX123',
+        referralLink: 'https://spelinx.com/signup?ref=SPELINX123',
         totalReferrals: 0,
         activeReferrals: 0,
         totalEarnings: 0,
         availableBalance: 0,
+        credits: 0,
         recentReferrals: []
       })
     } finally {
@@ -88,13 +99,14 @@ export default function ReferralPage() {
   }
 
   const shareReferralLink = () => {
-    const referralLink = `https://spelinx.vercel.app/signup?ref=${stats?.referralCode}`
-    navigator.clipboard.writeText(referralLink)
-    alert('Referral link copied to clipboard!')
+    if (stats?.referralLink) {
+      navigator.clipboard.writeText(stats.referralLink)
+      toast.success('Referral link copied to clipboard!')
+    }
   }
 
   const getReferralUrl = () => {
-    return `https://spelinx.vercel.app/signup?ref=${stats?.referralCode}`
+    return stats?.referralLink || `https://spelinx.com/signup?ref=${stats?.referralCode}`
   }
 
   if (loading) {
@@ -134,6 +146,17 @@ export default function ReferralPage() {
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               Earn INX rewards by inviting friends to join SPELINX! Get bonus rewards when your referrals become premium members.
             </p>
+            {stats?.needsAuth && (
+              <div className="mt-6 p-4 bg-spelinx-primary/20 border border-spelinx-primary/30 rounded-lg">
+                <p className="text-spelinx-primary mb-2">Login to view your referral statistics and earnings</p>
+                <a
+                  href="/login"
+                  className="inline-block px-6 py-2 bg-spelinx-primary text-white rounded-lg hover:bg-spelinx-primary/90 transition-colors"
+                >
+                  Login to Continue
+                </a>
+              </div>
+            )}
           </motion.div>
 
           {/* Referral Code Section */}

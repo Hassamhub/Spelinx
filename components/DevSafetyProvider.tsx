@@ -10,40 +10,44 @@ export function DevSafetyProvider({ children }: DevSafetyProviderProps) {
   const [isLocked, setIsLocked] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
 
   useEffect(() => {
     // Check if dev safety is already bypassed
     const devSafetyBypassed = localStorage.getItem('dev_safety_bypassed')
-    if (devSafetyBypassed === 'true') {
-      setIsAuthenticated(true)
-      return
-    }
+    if (devSafetyBypassed === 'true') return
 
-    // Check if it's exactly Oct 20, 2025 or later
+    // Check if it's exactly Nov 1, 2025 or later
     const currentDate = new Date()
-    const lockDate = new Date('2025-10-20T00:00:00Z') // October 20, 2025 UTC
+    const lockDate = new Date('2025-11-01T00:00:00Z') // November 1, 2025 UTC
 
     if (currentDate >= lockDate) {
       setIsLocked(true)
-    } else {
-      setIsAuthenticated(true)
+      setIsAuthenticated(false)
     }
   }, [])
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Obfuscated master key - DO NOT SHARE
-    const DEV_PASSWORD = 'SPELINX_MASTER_KEY_zidifm32ncKN2XXEYDH7M'
-
-    if (password === DEV_PASSWORD) {
-      setIsAuthenticated(true)
-      localStorage.setItem('dev_safety_bypassed', 'true')
-      setError('')
-    } else {
-      setError('Incorrect password. Access denied.')
-      setPassword('')
+    setError('')
+    try {
+      const res = await fetch('/api/dev/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+      if (res.ok) {
+        setIsAuthenticated(true)
+        localStorage.setItem('dev_safety_bypassed', 'true')
+        setPassword('')
+      } else if (res.status === 429) {
+        setError('Too many attempts. Please try again later.')
+      } else {
+        setError('Incorrect password. Access denied.')
+        setPassword('')
+      }
+    } catch (_) {
+      setError('Network error. Please try again.')
     }
   }
 

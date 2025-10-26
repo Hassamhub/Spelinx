@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Crown, Zap, Shield, Star, Check, X, Upload } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'react-hot-toast'
 
 const premiumFeatures = [
   {
@@ -89,7 +90,7 @@ export default function PremiumSection() {
       // Get user token
       const token = localStorage.getItem('spelinx_token')
       if (!token) {
-        alert('Please login to purchase premium plans')
+        toast.error('Please login to purchase premium plans')
         window.location.href = '/login'
         return
       }
@@ -127,9 +128,9 @@ export default function PremiumSection() {
       } else {
         // Handle specific error cases
         if (response.status === 429) {
-          alert('Too many payment requests. Please wait 5 minutes before trying again.')
+          toast.error('Too many payment requests. Please wait 5 minutes before trying again.')
         } else if (data.error === 'Invalid token' || response.status === 403) {
-          alert('Your session has expired. Please login again.')
+          toast.error('Your session has expired. Please login again.')
           localStorage.removeItem('spelinx_token')
           window.location.href = '/login'
         } else if (response.status >= 500) {
@@ -139,23 +140,23 @@ export default function PremiumSection() {
             setTimeout(() => handlePurchase(planType, retryCount + 1), 2000)
             return
           }
-          alert('Server temporarily unavailable. Please try again in a few minutes.')
+          toast.error('Server temporarily unavailable. Please try again in a few minutes.')
         } else {
-          alert(data.error || 'Payment initiation failed. Please try again.')
+          toast.error(data.error || 'Payment initiation failed. Please try again.')
         }
       }
     } catch (error: any) {
       console.error('Purchase error:', error)
 
       if (error.name === 'AbortError') {
-        alert('Request timed out. Please check your connection and try again.')
+        toast.error('Request timed out. Please check your connection and try again.')
       } else if (retryCount < 1) {
         // Network error - retry once
         console.log('Network error, retrying...')
         setTimeout(() => handlePurchase(planType, retryCount + 1), 2000)
         return
       } else {
-        alert('Network error. Please check your connection and try again.')
+        toast.error('Network error. Please check your connection and try again.')
       }
     } finally {
       setIsProcessing(false)
@@ -176,7 +177,7 @@ export default function PremiumSection() {
 
   const handleSubmitProof = async (retryCount = 0) => {
     if (!proofImage) {
-      alert('Please select a payment proof image')
+      toast.error('Please select a payment proof image')
       return
     }
 
@@ -212,35 +213,35 @@ export default function PremiumSection() {
       }
 
       if (response.ok) {
-        alert('Payment proof submitted successfully! Admin will verify within 2-3 hours.')
+        toast.success('Payment proof submitted successfully! Admin will verify within 2-3 hours.')
         setShowPaymentModal(false)
         setProofImage('')
         setSelectedPlan(null)
       } else {
         // Handle specific error cases
         if (response.status === 429) {
-          alert('Too many payment requests. Please wait 5 minutes before trying again.')
+          toast.error('Too many payment requests. Please wait 5 minutes before trying again.')
         } else if (response.status >= 500 && retryCount < 1) {
           // Server error - retry once
           console.log('Server error, retrying...')
           setTimeout(() => handleSubmitProof(retryCount + 1), 3000)
           return
         } else {
-          alert(data.error || 'Failed to submit proof. Please try again.')
+          toast.error(data.error || 'Failed to submit proof. Please try again.')
         }
       }
     } catch (error: any) {
       console.error('Submit proof error:', error)
 
       if (error.name === 'AbortError') {
-        alert('Request timed out. Please try again with a smaller image.')
+        toast.error('Request timed out. Please try again with a smaller image.')
       } else if (retryCount < 1) {
         // Network error - retry once
         console.log('Network error, retrying...')
         setTimeout(() => handleSubmitProof(retryCount + 1), 3000)
         return
       } else {
-        alert('Failed to submit proof. Please try again.')
+        toast.error('Failed to submit proof. Please try again.')
       }
     } finally {
       setIsSubmitting(false)
@@ -368,25 +369,6 @@ export default function PremiumSection() {
           ))}
         </div>
 
-        {/* Spinning Wheel Teaser */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mt-16"
-        >
-          <div className="glass rounded-2xl p-8 max-w-2xl mx-auto">
-            <div className="text-6xl mb-4">🎡</div>
-            <h3 className="text-2xl font-bold text-white mb-2">Daily Spinning Wheel</h3>
-            <p className="text-gray-300 mb-4">
-              Premium members get exclusive access to our daily spinning wheel with amazing rewards!
-            </p>
-            <div className="text-spelinx-secondary font-semibold">
-              Available only for SPELINX Plus members
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
 
@@ -436,7 +418,7 @@ export default function PremiumSection() {
                       onClick={() => {
                         // Copy UPI URI to clipboard for manual opening
                         navigator.clipboard.writeText(selectedPlan.qrData).then(() => {
-                          alert('UPI payment link copied! Open your UPI app and paste this link:\n\n' + selectedPlan.qrData);
+                          toast.success('UPI payment link copied! Open your UPI app and paste the link.')
                         }).catch(() => {
                           // Fallback - try to open directly
                           window.location.href = selectedPlan.qrData;
@@ -534,10 +516,10 @@ export default function PremiumSection() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(selectedPlan.qrData).then(() => {
-                      alert('✅ UPI payment link copied!\n\n📱 Paste this in your UPI app to pay:\n' + selectedPlan.qrData);
+                      toast.success('UPI payment link copied! Paste in your UPI app to pay.')
                     }).catch(() => {
                       navigator.clipboard.writeText(selectedPlan.upiId).then(() => {
-                        alert('✅ UPI ID copied!\n\n📱 Use this in your UPI app: ' + selectedPlan.upiId);
+                        toast.success('UPI ID copied! Use this in your UPI app.')
                       });
                     });
                   }}

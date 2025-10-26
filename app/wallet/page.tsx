@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Wallet, CreditCard, Upload, History, DollarSign, Coins, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
+import { toast } from 'react-hot-toast'
 
 interface Transaction {
   _id: string
@@ -37,8 +38,16 @@ export default function WalletPage() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
-    loadWalletData()
-    loadTransactions()
+    const load = async () => {
+      try {
+        await Promise.all([loadWalletData(), loadTransactions()])
+      } catch (e) {
+        console.error('Wallet load error', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
   }, [])
 
   const loadWalletData = async () => {
@@ -49,15 +58,15 @@ export default function WalletPage() {
         return
       }
 
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch('/api/wallet', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
       if (response.ok) {
-        const userData = await response.json()
+        const walletData = await response.json()
         setWallet({
-          balance: userData.balance || 0,
-          inx: userData.inx || 0
+          balance: walletData.balance || 0,
+          inx: walletData.balance || 0
         })
       }
     } catch (error) {
@@ -70,7 +79,7 @@ export default function WalletPage() {
       const token = localStorage.getItem('spelinx_token')
       if (!token) return
 
-      const response = await fetch('/api/payment/transactions', {
+      const response = await fetch('/api/wallet/transactions', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
@@ -87,7 +96,7 @@ export default function WalletPage() {
 
   const handleDeposit = async () => {
     if (!depositAmount || !txnId || !screenshot) {
-      alert('Please fill all fields and upload a screenshot')
+      toast.error('Please fill all fields and upload a screenshot')
       return
     }
 
@@ -96,35 +105,47 @@ export default function WalletPage() {
     try {
       const token = localStorage.getItem('spelinx_token')
       if (!token) {
-        alert('Please login first')
+        toast.error('Please login first')
         return
       }
 
-      const formData = new FormData()
-      formData.append('amount', depositAmount)
-      formData.append('txnId', txnId)
-      formData.append('screenshot', screenshot)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
 
-      const response = await fetch('/api/payment/submit-deposit', {
+      const response = await fetch('/api/wallet/deposit-submit-proof', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          transactionId: txnId,
+          proofImage: 'screenshot_' + Date.now() + '.jpg',
+          inrAmount: parseFloat(depositAmount)
+        }),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       const data = await response.json()
 
       if (response.ok) {
-        alert('Deposit submitted successfully! It will be verified within 24 hours.')
+        toast.success('Deposit submitted successfully! It will be verified within 24 hours.')
         setDepositAmount('')
         setTxnId('')
         setScreenshot(null)
         loadTransactions()
       } else {
-        alert(data.error || 'Deposit submission failed')
+        toast.error(data.error || 'Deposit submission failed')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Deposit error:', error)
-      alert('Deposit submission failed. Please try again.')
+      if (error.name === 'AbortError') {
+        toast.error('Request timed out. Please try again.')
+      } else {
+        toast.error('Deposit submission failed. Please try again.')
+      }
     } finally {
       setIsProcessing(false)
     }
@@ -132,7 +153,7 @@ export default function WalletPage() {
 
   const handleWithdraw = async () => {
     if (!withdrawAmount || !upiId) {
-      alert('Please fill all fields')
+      toast.error('Please fill all fields')
       return
     }
 
@@ -141,11 +162,14 @@ export default function WalletPage() {
     try {
       const token = localStorage.getItem('spelinx_token')
       if (!token) {
-        alert('Please login first')
+        toast.error('Please login first')
         return
       }
 
-      const response = await fetch('/api/payment/request-withdrawal', {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+      const response = await fetch('/api/wallet/request-withdrawal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,22 +178,29 @@ export default function WalletPage() {
         body: JSON.stringify({
           amount: withdrawAmount,
           upiId
-        })
+        }),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       const data = await response.json()
 
       if (response.ok) {
-        alert('Withdrawal request submitted successfully! It will be processed within 24-48 hours.')
+        toast.success('Withdrawal request submitted successfully! Processed in 24-48 hours.')
         setWithdrawAmount('')
         setUpiId('')
         loadTransactions()
       } else {
-        alert(data.error || 'Withdrawal request failed')
+        toast.error(data.error || 'Withdrawal request failed')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Withdrawal error:', error)
-      alert('Withdrawal request failed. Please try again.')
+      if (error.name === 'AbortError') {
+        toast.error('Request timed out. Please try again.')
+      } else {
+        toast.error('Withdrawal request failed. Please try again.')
+      }
     } finally {
       setIsProcessing(false)
     }

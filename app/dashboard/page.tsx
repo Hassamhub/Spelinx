@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ReferralPanel from '@/components/ReferralPanel'
 import { authAPI } from '@/lib/api'
 import { User, Trophy, Coins, Calendar, Settings, LogOut } from 'lucide-react'
 
@@ -33,7 +34,29 @@ export default function DashboardPage() {
   const loadUserProfile = async () => {
     try {
       const response = await authAPI.getProfile()
-      setUser(response.data)
+      const apiUser: any = response.data?.user || response.data || {}
+      const normalized: any = {
+        ...apiUser,
+        // Ensure fields expected by UI exist
+        joinedAt: apiUser.joinedAt || apiUser.createdAt || new Date().toISOString(),
+        lastLogin: apiUser.lastLogin || apiUser.createdAt || new Date().toISOString(),
+      }
+
+      // If referralCode is missing, fetch it from referral API
+      if (!normalized.referralCode) {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('spelinx_token') : null
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+        try {
+          const r = await fetch('/api/referral/me/link', { headers })
+          if (r.ok) {
+            const d = await r.json()
+            if (d?.referralCode) normalized.referralCode = d.referralCode
+          }
+        } catch (_) {
+          // ignore; keep normalized as is
+        }
+      }
+      setUser(normalized as any)
     } catch (error) {
       console.error('Failed to load profile:', error)
       router.push('/login')
@@ -52,8 +75,12 @@ export default function DashboardPage() {
   } : null
 
   const handleLogout = () => {
-    localStorage.removeItem('spelinx_token')
-    router.push('/')
+    fetch('/api/auth/logout', { method: 'POST' })
+      .catch(() => {})
+      .finally(() => {
+        localStorage.removeItem('spelinx_token')
+        router.push('/')
+      })
   }
 
   if (loading) {
@@ -155,6 +182,13 @@ export default function DashboardPage() {
                       {new Date(user.lastLogin).toLocaleDateString()}
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Referral Code</label>
+                    <div className="bg-white/10 rounded-lg px-4 py-3 text-white font-mono">
+                      {(user as any).referralCode || 'Loading...'}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-6">
@@ -233,7 +267,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Account Settings */}
-              <div className="glass-premium rounded-xl p-6 border border-white/20">
+              <div className="glass-premium rounded-xl p-6 border border-white/20 mb-6">
                 <h3 className="text-xl font-bold text-white mb-4">Account</h3>
 
                 <div className="space-y-3">
@@ -251,6 +285,9 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Referral Panel */}
+              <ReferralPanel />
             </div>
           </div>
         </div>

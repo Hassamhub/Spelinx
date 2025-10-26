@@ -16,6 +16,7 @@ import Header from '@/components/Header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { adminAPI } from '@/lib/api'
+import toast from 'react-hot-toast'
 
 interface PremiumPayment {
   _id: string
@@ -43,12 +44,15 @@ export default function PremiumPaymentsManagement() {
   const [selectedPayment, setSelectedPayment] = useState<PremiumPayment | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalPayments, setTotalPayments] = useState(0)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     checkAdminAccess()
-    loadPayments()
-  }, [])
+    loadPayments(currentPage)
+  }, [currentPage])
 
   useEffect(() => {
     const token = localStorage.getItem('spelinx_token')
@@ -60,25 +64,30 @@ export default function PremiumPaymentsManagement() {
     console.log('Premium payment management access - admin privileges assumed from dashboard access')
   }
 
-  const loadPayments = async () => {
+  const loadPayments = async (page: number = 1) => {
     try {
       setLoading(true)
-      const response = await adminAPI.getPremiumPayments()
+      const response = await adminAPI.getPremiumPayments(page, 10)
       setPayments(response.data.payments || [])
+      setCurrentPage(response.data.page || 1)
+      setTotalPages(response.data.totalPages || 1)
+      setTotalPayments(response.data.total || 0)
     } catch (error: any) {
       console.error('Failed to load premium payments:', error)
       if (error.response?.status === 429) {
-        alert('Too many requests. Please wait a moment and try again.')
+        toast.error('Too many requests. Please wait a moment and try again.')
       } else if (error.response?.status === 401) {
-        alert('Session expired. Please login again.')
+        toast.error('Session expired. Please login again.')
         router.push('/login')
       } else if (error.response?.status === 403) {
-        alert('Access denied. Admin privileges required.')
+        toast.error('Access denied. Admin privileges required.')
         router.push('/login')
       } else {
         // Show error but don't immediately alert - let data load
         console.warn('Failed to load premium payment data, but continuing...')
         setPayments([]) // Set empty array so UI doesn't break
+        setTotalPages(1)
+        setTotalPayments(0)
       }
     } finally {
       setLoading(false)
@@ -91,27 +100,27 @@ export default function PremiumPaymentsManagement() {
     try {
       await adminAPI.approvePremiumPayment(paymentId)
       loadPayments() // Refresh data
-      alert('Premium payment approved successfully!')
+      toast.success('Premium payment approved successfully!')
     } catch (error) {
       console.error('Failed to approve premium payment:', error)
-      alert('Failed to approve premium payment')
+      toast.error('Failed to approve premium payment')
     }
   }
 
   const handleRejectPayment = async (paymentId: string) => {
     const reason = prompt('Enter rejection reason:')
     if (!reason || reason.trim().length < 5) {
-      alert('Rejection reason is required (minimum 5 characters)')
+      toast.error('Rejection reason is required (minimum 5 characters)')
       return
     }
 
     try {
       await adminAPI.rejectPremiumPayment(paymentId, reason)
       loadPayments() // Refresh data
-      alert('Premium payment rejected successfully!')
+      toast.success('Premium payment rejected successfully!')
     } catch (error) {
       console.error('Failed to reject premium payment:', error)
-      alert('Failed to reject premium payment')
+      toast.error('Failed to reject premium payment')
     }
   }
 
@@ -223,19 +232,19 @@ export default function PremiumPaymentsManagement() {
               placeholder="Search by username, email, or TXN ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+              className="pl-10 pr-4 py-2 w-full bg-gradient-to-r from-gray-800/50 to-gray-700/50 border border-spelinx-primary/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary focus:ring-2 focus:ring-spelinx-primary/20 backdrop-blur-sm"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-spelinx-primary"
+            className="px-4 py-2 bg-gradient-to-r from-gray-800/50 to-gray-700/50 border border-spelinx-primary/30 rounded-lg text-white focus:outline-none focus:border-spelinx-primary focus:ring-2 focus:ring-spelinx-primary/20 backdrop-blur-sm"
           >
-            <option value="all">All Status</option>
-            <option value="submitted">Submitted</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="all" className="bg-gray-800 text-white">All Status</option>
+            <option value="submitted" className="bg-gray-800 text-yellow-400">Submitted</option>
+            <option value="approved" className="bg-gray-800 text-green-400">Approved</option>
+            <option value="rejected" className="bg-gray-800 text-red-400">Rejected</option>
           </select>
         </motion.div>
 
@@ -274,7 +283,7 @@ export default function PremiumPaymentsManagement() {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">
+                      <span className="px-3 py-1 bg-gradient-to-r from-yellow-500/20 to-yellow-400/20 text-yellow-300 rounded-full text-xs font-medium border border-yellow-500/30 backdrop-blur-sm">
                         {getPlanDisplayName(payment.planType)}
                       </span>
                     </td>
@@ -285,14 +294,14 @@ export default function PremiumPaymentsManagement() {
                       <span className="font-mono text-gray-300">{payment.transactionId}</span>
                     </td>
                     <td className="py-4 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${
                         payment.status === 'approved'
-                          ? 'bg-green-500/20 text-green-400'
+                          ? 'bg-green-500/20 text-green-300 border-green-500/30'
                           : payment.status === 'rejected'
-                          ? 'bg-red-500/20 text-red-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
+                          ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                          : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                       }`}>
-                        {payment.status}
+                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-gray-400">
@@ -336,6 +345,67 @@ export default function PremiumPaymentsManagement() {
             </table>
           </div>
 
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-sm text-gray-300 font-medium">
+                Showing <span className="text-spelinx-primary font-semibold">{filteredPayments.length}</span> of <span className="text-spelinx-accent font-semibold">{totalPayments}</span> payments
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50 disabled:opacity-50 disabled:hover:bg-gray-800/50 transition-all duration-200"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ← Previous
+                </Button>
+
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className={`min-w-[40px] transition-all duration-200 ${
+                          currentPage === pageNum
+                            ? "bg-gradient-to-r from-spelinx-primary to-spelinx-secondary text-white shadow-lg shadow-spelinx-primary/25"
+                            : "bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50"
+                        }`}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50 disabled:opacity-50 disabled:hover:bg-gray-800/50 transition-all duration-200"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </Button>
+              </div>
+            </div>
+          )}
+
           {filteredPayments.length === 0 && (
             <div className="text-center py-8 text-gray-400">
               No premium payments found matching your criteria
@@ -378,7 +448,9 @@ export default function PremiumPaymentsManagement() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-300">Plan Type</label>
-                    <p className="text-lg font-bold text-yellow-400">{getPlanDisplayName(selectedPayment.planType)}</p>
+                    <span className="px-3 py-1 bg-gradient-to-r from-yellow-500/20 to-yellow-400/20 text-yellow-300 rounded-full text-sm font-medium border border-yellow-500/30 backdrop-blur-sm">
+                      {getPlanDisplayName(selectedPayment.planType)}
+                    </span>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-300">Amount</label>
@@ -416,14 +488,14 @@ export default function PremiumPaymentsManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-300">Status</label>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm border ${
                       selectedPayment.status === 'approved'
-                        ? 'bg-green-500/20 text-green-400'
+                        ? 'bg-green-500/20 text-green-300 border-green-500/30'
                         : selectedPayment.status === 'rejected'
-                        ? 'bg-red-500/20 text-red-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
+                        ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                        : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                     }`}>
-                      {selectedPayment.status}
+                      {selectedPayment.status.charAt(0).toUpperCase() + selectedPayment.status.slice(1)}
                     </span>
                   </div>
                   <div>

@@ -118,10 +118,9 @@ export default function LoadingScreen() {
                 "🎮 Did you know? SPELINX has 6 core games!",
                 "👑 Premium members earn 2x more rewards!",
                 "🏆 Weekly leaderboards reset every Monday!",
-                "🎯 Daily spinning wheel available for premium users!",
                 "🎨 Custom skins and themes for premium members!",
                 "💰 Refer friends and earn commission on their purchases!"
-              ][Math.floor(Date.now() / 5000) % 6]}
+              ][Math.floor(Date.now() / 5000) % 5]}
             </motion.p>
           </div>
         </motion.div>

@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { connectDB, User, Wallet, Referral } from '@/lib/mongodb';
+import { nanoid } from 'nanoid';
+import { connectDB, User, Wallet, Referral, ReferralConfig, AuditLog } from '@/lib/mongodb';
+import referralConfig from '@/lib/referralConfig';
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, email, password, referralCode } = await request.json();
+    const { username, email, password, referralCode: inputReferralCode } = await request.json();
+
+    // Get client IP address for anti-abuse measures
+    const clientIP = request.headers.get('x-forwarded-for') ||
+                      request.headers.get('x-real-ip') ||
+                      'unknown';
+
+    // Check for ?ref= in query params
+    const { searchParams } = new URL(request.url);
+    const refParam = searchParams.get('ref');
 
     await connectDB();
 
@@ -13,6 +24,15 @@ export async function POST(request: NextRequest) {
     if (!username || !email || !password) {
       return NextResponse.json(
         { error: 'Username, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
@@ -33,89 +53,162 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for duplicate IP signups (anti-abuse)
+    const recentSignupsFromIP = await User.find({
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Last 24 hours
+      // Note: In production, you'd want to store IP addresses for this check
+    });
+
+    if (recentSignupsFromIP.length >= referralConfig.maxReferralsPerIP) {
+      return NextResponse.json(
+        { error: 'Too many signups from this IP address. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    // Handle referral code validation (from body or query param)
+    let referrerUser = null;
+    const codeToUse = inputReferralCode || refParam;
+    if (codeToUse) {
+      // Find referrer by referral code
+      referrerUser = await User.findOne({
+        referralCode: codeToUse.toUpperCase()
+      });
+
+      if (!referrerUser) {
+        return NextResponse.json(
+          { error: 'Invalid referral code' },
+          { status: 400 }
+        );
+      }
+
+      // Prevent self-referral
+      if (referrerUser.email === email.toLowerCase()) {
+        return NextResponse.json(
+          { error: 'Cannot use your own referral code' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate temporary ID for referral code
-    const tempId = Math.random().toString(36).substring(2, 15);
+    // Generate unique referral code first
+    let referralCode;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    // Create user
+    do {
+      referralCode = nanoid(8).toUpperCase();
+      const existingUser = await User.findOne({ referralCode });
+      if (!existingUser) {
+        isUnique = true;
+      }
+      attempts++;
+    } while (!isUnique && attempts < maxAttempts);
+
+    if (!isUnique) {
+      return NextResponse.json(
+        { error: 'Unable to generate unique referral code. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    // Create user with referral code
     const newUser = new User({
       username: username.trim(),
       email: email.toLowerCase().trim(),
-      password: hashedPassword
+      password: hashedPassword,
+      avatar: '/assets/default-avatar.svg',
+      referralCode,
+      referredBy: referrerUser ? referrerUser._id : null
     });
 
     await newUser.save();
 
-    // Set referral code after save to avoid validation issues
-    newUser.referralCode = `SPELINX${newUser._id.toString().slice(-6).toUpperCase()}`;
-    await newUser.save();
-
     // Generate JWT token
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email, username: newUser.username },
+      {
+        id: newUser._id,
+        email: newUser.email,
+        username: newUser.username,
+        role: 'user',
+        isAdmin: false,
+        isPremium: false
+      },
       process.env.JWT_SECRET || 'dev_secret',
       { expiresIn: '7d' }
     );
 
     // Create default wallet
     const wallet = new Wallet({ userId: newUser._id });
+
+    // Give bonus credits to new user
+    wallet.balance = referralConfig.bonusCredits;
     await wallet.save();
 
     // Handle referral if provided
-    if (referralCode) {
+    if (referrerUser) {
       try {
-        // Extract referrer ID from code - assuming SPELINX + last 6 chars of user ID uppercase
-        const referrerIdPart = referralCode.replace('SPELINX', '').toLowerCase();
-
-        // Find user by referral code
-        const referrerUser = await User.findOne({
-          referralCode: referralCode.toUpperCase()
+        // Create referral record
+        const referral = new Referral({
+          referrerId: referrerUser._id,
+          refereeId: newUser._id,
+          status: 'pending',
+          rewardType: referralConfig.rewardType
         });
 
-        if (referrerUser) {
-          const referrerId = referrerUser._id.toString();
+        await referral.save();
 
-          // Create referral record
-          const referral = new Referral({
-            referrerId,
-            referredId: newUser._id,
-            referralCode,
-            status: 'completed',
-            completedAt: new Date(),
-          });
+        // Increment referrer's referral count
+        await User.findByIdAndUpdate(referrerUser._id, { $inc: { referralCount: 1 } });
 
-          await referral.save();
+        // Log the referral action
+        const auditLog = new AuditLog({
+          userId: newUser._id,
+          action: 'signup_with_referral',
+          details: `Signed up with referral from ${referrerUser.username}`,
+          ipAddress: clientIP
+        });
+        await auditLog.save();
 
-          // Reward referrer
-          const referrerWallet = await Wallet.findOne({ userId: referrerId });
-          if (referrerWallet) {
-            referrerWallet.balance += 100; // 100 INX reward
-            await referrerWallet.save();
-          }
-
-          // Reward new user
-          wallet.balance += 50; // 50 INX bonus
-          await wallet.save();
-        }
       } catch (referralError) {
         console.error('Referral processing error:', referralError);
         // Don't fail signup if referral processing fails
       }
     }
 
+    // Log successful signup
+    const auditLog = new AuditLog({
+      userId: newUser._id,
+      action: 'user_signup',
+      details: `New user registered: ${username}`,
+      ipAddress: clientIP
+    });
+    await auditLog.save();
+
     const response = NextResponse.json({
       token,
       user: {
         id: newUser._id,
         username: newUser.username,
-        email: newUser.email
+        email: newUser.email,
+        role: 'user',
+        isAdmin: false,
+        isPremium: false,
+        avatar: newUser.avatar,
+        theme: newUser.theme,
+        referralCode: newUser.referralCode,
+        referralCount: newUser.referralCount,
+        credits: newUser.credits
       },
       wallet: {
         balance: wallet.balance,
         totalDeposits: wallet.totalDeposits,
-        totalWithdrawals: wallet.totalWithdrawals
+        totalWithdrawals: wallet.totalWithdrawals,
+        transactions: wallet.transactions || []
       }
     }, { status: 201 });
 

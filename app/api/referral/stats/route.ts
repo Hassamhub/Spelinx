@@ -11,26 +11,39 @@ export async function GET(request: NextRequest) {
                   request.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      );
+      // Return default stats for non-authenticated users
+      return NextResponse.json({
+        totalReferrals: 0,
+        completedReferrals: 0,
+        totalEarned: 0,
+        needsAuth: true
+      });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret') as any;
+    try {
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret') as any;
 
-    // Get referral stats
-    const referrals = await Referral.find({ referrerId: decoded.id });
-    const completed = referrals.filter(r => r.status === 'completed');
+      // Get referral stats
+      const referrals = await Referral.find({ referrerId: decoded.id });
+      const completed = referrals.filter(r => r.status === 'completed');
 
-    const stats = {
-      totalReferrals: referrals.length,
-      completedReferrals: completed.length,
-      totalEarned: completed.length * 100, // 100 INX per referral
-    };
+      const stats = {
+        totalReferrals: referrals.length,
+        completedReferrals: completed.length,
+        totalEarned: completed.length * 100, // 100 INX per referral
+      };
 
-    return NextResponse.json(stats);
+      return NextResponse.json(stats);
+    } catch (jwtError) {
+      // Token expired or invalid, return default stats
+      return NextResponse.json({
+        totalReferrals: 0,
+        completedReferrals: 0,
+        totalEarned: 0,
+        needsAuth: true
+      });
+    }
 
   } catch (error) {
     console.error('Get referral stats error:', error);

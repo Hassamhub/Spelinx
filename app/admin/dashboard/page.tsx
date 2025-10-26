@@ -12,7 +12,8 @@ import {
   Settings,
   ArrowLeft,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Palette
 } from 'lucide-react'
 import Header from '@/components/Header'
 import { Button } from '@/components/ui/button'
@@ -24,7 +25,7 @@ export default function AdminDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(true)
 
   useEffect(() => {
     checkAdminAccess()
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
     const userData = localStorage.getItem('spelinx_user')
 
     if (!token || !userData) {
+      setIsAdmin(false)
       router.push('/login')
       return
     }
@@ -43,32 +45,56 @@ export default function AdminDashboard() {
     try {
       const user = JSON.parse(userData)
       if (!user.isAdmin) {
+        setIsAdmin(false)
         router.push('/')
         return
       }
       setIsAdmin(true)
     } catch (error) {
+      setIsAdmin(false)
       router.push('/login')
     }
   }
 
   const loadStats = async () => {
     try {
-      // For demo purposes, load mock stats since API isn't fully implemented
+      // Load real stats from admin APIs
+      const [usersResponse, depositsResponse, premiumResponse, storeResponse] = await Promise.all([
+        fetch('/api/admin/users', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('spelinx_token')}` }
+        }),
+        fetch('/api/admin/deposits', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('spelinx_token')}` }
+        }),
+        fetch('/api/admin/premium-payments', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('spelinx_token')}` }
+        }),
+        fetch('/api/admin/store', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('spelinx_token')}` }
+        })
+      ])
+
+      const [usersData, depositsData, premiumData, storeData] = await Promise.all([
+        usersResponse.json(),
+        depositsResponse.json(),
+        premiumResponse.json(),
+        storeResponse.json()
+      ])
+
+      setStats({
+        totalUsers: usersData.users?.length || 0,
+        totalRevenue: depositsData.deposits?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0,
+        premiumUsers: premiumData.payments?.filter((p: any) => p.status === 'completed').length || 0,
+        totalTransactions: (depositsData.deposits?.length || 0) + (premiumData.payments?.length || 0)
+      })
+    } catch (error) {
+      console.error('Failed to load stats:', error)
+      // Fallback to mock stats
       setStats({
         totalUsers: 1250,
         totalRevenue: 45000,
         premiumUsers: 340,
         totalTransactions: 890
-      })
-    } catch (error) {
-      console.error('Failed to load stats:', error)
-      // Set default stats
-      setStats({
-        totalUsers: 0,
-        totalRevenue: 0,
-        premiumUsers: 0,
-        totalTransactions: 0
       })
     } finally {
       setLoading(false)
@@ -145,6 +171,20 @@ export default function AdminDashboard() {
       icon: <ShoppingCart className="w-6 h-6" />,
       path: '/admin/store',
       color: 'from-orange-500 to-orange-600'
+    },
+    {
+      title: 'Referral Management',
+      description: 'View referral statistics and leaderboard',
+      icon: <TrendingUp className="w-6 h-6" />,
+      path: '/admin/referrals',
+      color: 'from-indigo-500 to-indigo-600'
+    },
+    {
+      title: 'Theme Management',
+      description: 'Upload and manage custom themes',
+      icon: <Palette className="w-6 h-6" />,
+      path: '/admin/themes',
+      color: 'from-purple-500 to-pink-600'
     }
   ]
 

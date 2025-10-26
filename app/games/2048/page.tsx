@@ -6,7 +6,7 @@ import Footer from '@/components/Footer'
 import { useSound } from '@/hooks/useSound'
 
 const GRID_SIZE = 4
-const INITIAL_GRID = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0))
+const INITIAL_GRID = Array(GRID_SIZE).fill(Array(GRID_SIZE).fill(0))
 
 export default function Game2048() {
   const [grid, setGrid] = useState<number[][]>(INITIAL_GRID)
@@ -14,127 +14,103 @@ export default function Game2048() {
   const [gameOver, setGameOver] = useState(false)
   const [won, setWon] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
 
   // Sound effects
   const moveSound = useSound('/sounds/game-start.mp3', 0.3)
   const mergeSound = useSound('/sounds/game-win.mp3', 0.5)
   const gameOverSound = useSound('/sounds/game-lose.mp3')
 
-  const generateRandomTile = (currentGrid: number[][]) => {
-    const emptyCells: { x: number; y: number }[] = []
-    for (let i = 0; i < GRID_SIZE; i++) {
-      for (let j = 0; j < GRID_SIZE; j++) {
-        if (currentGrid[i][j] === 0) {
-          emptyCells.push({ x: i, y: j })
-        }
-      }
-    }
-
-    if (emptyCells.length === 0) return currentGrid
-
-    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-    const newGrid = currentGrid.map(row => [...row])
-    newGrid[randomCell.x][randomCell.y] = Math.random() < 0.9 ? 2 : 4
-    return newGrid
-  }
-
-  const initializeGame = () => {
-    let newGrid = [...INITIAL_GRID.map(row => [...row])]
-    newGrid = generateRandomTile(newGrid)
-    newGrid = generateRandomTile(newGrid)
+  const initializeGame = useCallback(() => {
+    const newGrid = Array(GRID_SIZE).fill(Array(GRID_SIZE).fill(0))
+    addRandomTile(newGrid)
+    addRandomTile(newGrid)
     setGrid(newGrid)
     setScore(0)
     setGameOver(false)
     setWon(false)
-  }
+  }, [])
 
-  const moveLeft = (currentGrid: number[][]) => {
-    const newGrid = currentGrid.map(row => [...row])
-    let moved = false
-    let newScore = score
-
-    for (let i = 0; i < GRID_SIZE; i++) {
-      // Compress
-      const compressed = newGrid[i].filter(val => val !== 0)
-
-      // Merge
-      for (let j = 0; j < compressed.length - 1; j++) {
-        if (compressed[j] === compressed[j + 1]) {
-          compressed[j] *= 2
-          newScore += compressed[j]
-          compressed[j + 1] = 0
-          moved = true
-        }
-      }
-
-      // Compress again
-      const finalCompressed = compressed.filter(val => val !== 0)
-
-      // Fill with zeros
-      while (finalCompressed.length < GRID_SIZE) {
-        finalCompressed.push(0)
-      }
-
-      // Check if moved
-      if (JSON.stringify(newGrid[i]) !== JSON.stringify(finalCompressed)) {
-        moved = true
-      }
-
-      newGrid[i] = finalCompressed
-    }
-
-    if (moved) {
-      setScore(newScore)
-      const gridWithNewTile = generateRandomTile(newGrid)
-      setGrid(gridWithNewTile)
-      checkGameState(gridWithNewTile)
-    }
-
-    return moved
-  }
-
-  const rotateGrid = (grid: number[][]) => {
-    const rotated = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0))
+  const addRandomTile = (currentGrid: number[][]) => {
+    const emptyCells = []
     for (let i = 0; i < GRID_SIZE; i++) {
       for (let j = 0; j < GRID_SIZE; j++) {
-        rotated[j][GRID_SIZE - 1 - i] = grid[i][j]
+        if (currentGrid[i][j] === 0) {
+          emptyCells.push({ row: i, col: j })
+        }
       }
     }
-    return rotated
+    if (emptyCells.length > 0) {
+      const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)]
+      currentGrid[randomCell.row][randomCell.col] = Math.random() < 0.9 ? 2 : 4
+    }
   }
 
-  const move = (direction: string) => {
+  const moveTiles = (direction: 'up' | 'down' | 'left' | 'right') => {
     if (gameOver || won) return
 
     let newGrid = grid.map(row => [...row])
+    let scoreIncrease = 0
     let moved = false
 
-    switch (direction) {
-      case 'left':
-        moved = moveLeft(newGrid)
-        break
-      case 'right':
-        newGrid = rotateGrid(rotateGrid(newGrid))
-        moved = moveLeft(newGrid)
-        newGrid = rotateGrid(rotateGrid(newGrid))
-        break
-      case 'up':
-        newGrid = rotateGrid(rotateGrid(rotateGrid(newGrid)))
-        moved = moveLeft(newGrid)
-        newGrid = rotateGrid(newGrid)
-        break
-      case 'down':
-        newGrid = rotateGrid(newGrid)
-        moved = moveLeft(newGrid)
-        newGrid = rotateGrid(rotateGrid(rotateGrid(newGrid)))
-        break
+    const moveLeft = (row: number[]) => {
+      const newRow = row.filter(val => val !== 0)
+      for (let i = 0; i < newRow.length - 1; i++) {
+        if (newRow[i] === newRow[i + 1]) {
+          newRow[i] *= 2
+          scoreIncrease += newRow[i]
+          newRow[i + 1] = 0
+          moved = true
+        }
+      }
+      const filteredRow = newRow.filter(val => val !== 0)
+      while (filteredRow.length < GRID_SIZE) {
+        filteredRow.push(0)
+      }
+      return { row: filteredRow, moved: JSON.stringify(row) !== JSON.stringify(filteredRow) }
+    }
+
+    if (direction === 'left') {
+      for (let i = 0; i < GRID_SIZE; i++) {
+        const result = moveLeft(newGrid[i])
+        newGrid[i] = result.row
+        if (result.moved) moved = true
+      }
+    } else if (direction === 'right') {
+      for (let i = 0; i < GRID_SIZE; i++) {
+        const result = moveLeft([...newGrid[i]].reverse())
+        newGrid[i] = result.row.reverse()
+        if (result.moved) moved = true
+      }
+    } else if (direction === 'up') {
+      for (let j = 0; j < GRID_SIZE; j++) {
+        const column = newGrid.map(row => row[j])
+        const result = moveLeft(column)
+        for (let i = 0; i < GRID_SIZE; i++) {
+          newGrid[i][j] = result.row[i]
+        }
+        if (result.moved) moved = true
+      }
+    } else if (direction === 'down') {
+      for (let j = 0; j < GRID_SIZE; j++) {
+        const column = newGrid.map(row => row[j]).reverse()
+        const result = moveLeft(column)
+        for (let i = 0; i < GRID_SIZE; i++) {
+          newGrid[GRID_SIZE - 1 - i][j] = result.row[i]
+        }
+        if (result.moved) moved = true
+      }
     }
 
     if (moved) {
-      moveSound.play()
+      addRandomTile(newGrid)
       setGrid(newGrid)
+      setScore(prev => prev + scoreIncrease)
       checkGameState(newGrid)
+      try {
+        moveSound.play?.()
+      } catch (e) {
+        // Ignore audio play errors
+      }
     }
   }
 
@@ -149,22 +125,24 @@ export default function Game2048() {
       }
     }
 
-    // Check if moves are possible
+    // Check for possible moves
     const hasEmptyCells = currentGrid.some(row => row.includes(0))
     if (hasEmptyCells) return
 
-    // Check if merges are possible
+    // Check for possible merges
     for (let i = 0; i < GRID_SIZE; i++) {
       for (let j = 0; j < GRID_SIZE - 1; j++) {
-        if (currentGrid[i][j] === currentGrid[i][j + 1] ||
-            currentGrid[j][i] === currentGrid[j + 1][i]) {
-          return
-        }
+        if (currentGrid[i][j] === currentGrid[i][j + 1]) return
+        if (currentGrid[j][i] === currentGrid[j + 1][i]) return
       }
     }
 
     setGameOver(true)
-    gameOverSound.play()
+    try {
+      gameOverSound.play?.()
+    } catch (e) {
+      // Ignore audio play errors
+    }
   }
 
   const getTileColor = (value: number) => {
@@ -187,9 +165,11 @@ export default function Game2048() {
 
   useEffect(() => {
     initializeGame()
-  }, [])
+  }, [initializeGame])
 
   // Touch controls for mobile
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0]
     setTouchStart({ x: touch.clientX, y: touch.clientY })
@@ -204,45 +184,34 @@ export default function Game2048() {
     const minSwipeDistance = 50
 
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // Horizontal swipe
       if (Math.abs(deltaX) > minSwipeDistance) {
-        if (deltaX > 0) {
-          move('right')
-        } else {
-          move('left')
-        }
+        moveTiles(deltaX > 0 ? 'right' : 'left')
       }
     } else {
-      // Vertical swipe
       if (Math.abs(deltaY) > minSwipeDistance) {
-        if (deltaY > 0) {
-          move('down')
-        } else {
-          move('up')
-        }
+        moveTiles(deltaY > 0 ? 'down' : 'up')
       }
     }
   }
-
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault()
-          move('left')
+          moveTiles('left')
           break
         case 'ArrowRight':
           e.preventDefault()
-          move('right')
+          moveTiles('right')
           break
         case 'ArrowUp':
           e.preventDefault()
-          move('up')
+          moveTiles('up')
           break
         case 'ArrowDown':
           e.preventDefault()
-          move('down')
+          moveTiles('down')
           break
       }
     }
@@ -266,7 +235,7 @@ export default function Game2048() {
               2048 Game
             </h1>
             <p className="text-xl text-gray-400">
-              Combine tiles to reach 2048! Use arrow keys to move tiles.
+              Combine tiles to reach 2048! Use arrow keys or buttons to move tiles.
             </p>
           </div>
 
@@ -301,7 +270,8 @@ export default function Game2048() {
             {/* Controls */}
             <div className="flex justify-center gap-4 mb-6">
               <button
-                onClick={() => move('up')}
+                type="button"
+                onClick={() => moveTiles('up')}
                 disabled={gameOver || won}
                 className="px-4 py-2 bg-spelinx-primary hover:bg-spelinx-primary/80 rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
               >
@@ -309,14 +279,16 @@ export default function Game2048() {
               </button>
               <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => move('left')}
+                  type="button"
+                  onClick={() => moveTiles('left')}
                   disabled={gameOver || won}
                   className="px-4 py-2 bg-spelinx-primary hover:bg-spelinx-primary/80 rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
                 >
                   ←
                 </button>
                 <button
-                  onClick={() => move('down')}
+                  type="button"
+                  onClick={() => moveTiles('down')}
                   disabled={gameOver || won}
                   className="px-4 py-2 bg-spelinx-primary hover:bg-spelinx-primary/80 rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
                 >
@@ -324,7 +296,8 @@ export default function Game2048() {
                 </button>
               </div>
               <button
-                onClick={() => move('right')}
+                type="button"
+                onClick={() => moveTiles('right')}
                 disabled={gameOver || won}
                 className="px-4 py-2 bg-spelinx-primary hover:bg-spelinx-primary/80 rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
               >

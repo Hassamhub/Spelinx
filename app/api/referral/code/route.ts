@@ -11,19 +11,24 @@ export async function GET(request: NextRequest) {
                   request.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      );
+      // Generate a default referral code for non-authenticated users
+      const referralCode = `SPELINX${Date.now().toString().slice(-6).toUpperCase()}`;
+      return NextResponse.json({ referralCode });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret') as any;
+    try {
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret') as any;
 
-    // Generate referral code based on user ID
-    const referralCode = `SPELINX${decoded.id.slice(-6).toUpperCase()}`;
+      // Generate referral code based on user ID
+      const referralCode = `SPELINX${decoded.id.slice(-6).toUpperCase()}`;
 
-    return NextResponse.json({ referralCode });
+      return NextResponse.json({ referralCode });
+    } catch (jwtError) {
+      // Token expired or invalid, generate default code
+      const referralCode = `SPELINX${Date.now().toString().slice(-6).toUpperCase()}`;
+      return NextResponse.json({ referralCode });
+    }
 
   } catch (error) {
     console.error('Get referral code error:', error);

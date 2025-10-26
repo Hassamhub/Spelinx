@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Palette, Bell, Shield, Save } from 'lucide-react'
+import { User, Palette, Bell, Shield, Save, Users } from 'lucide-react'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 
 interface UserProfile {
   name: string
   email: string
+  avatar?: string
+  theme?: string
+  referralCode?: string
 }
 
 interface Settings {
@@ -16,6 +19,15 @@ interface Settings {
   notifications: boolean
   soundEffects: boolean
   animations: boolean
+}
+
+interface Theme {
+  _id: string
+  name: string
+  description: string
+  price: number
+  category: string
+  image?: string
 }
 
 export default function SettingsPage() {
@@ -29,10 +41,16 @@ export default function SettingsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [loadingThemes, setLoadingThemes] = useState(true)
+  const [avatars, setAvatars] = useState<Theme[]>([])
+  const [loadingAvatars, setLoadingAvatars] = useState(true)
 
   useEffect(() => {
     loadUserProfile()
     loadSettings()
+    loadThemes()
+    loadAvatars()
   }, [])
 
   const loadUserProfile = async () => {
@@ -50,11 +68,16 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
-        const userData = await response.json()
+        const data = await response.json()
+        const userTheme = data.user.theme || 'default'
         setUser({
-          name: userData.username,
-          email: userData.email
+          name: data.user.username,
+          email: data.user.email,
+          avatar: data.user.avatar,
+          theme: userTheme,
+          referralCode: data.user.referralCode
         })
+        applyTheme(userTheme)
       } else {
         window.location.href = '/login'
       }
@@ -79,6 +102,34 @@ export default function SettingsPage() {
     }
   }
 
+  const loadThemes = async () => {
+    try {
+      const response = await fetch('/api/store?category=themes')
+      const data = await response.json()
+      if (data.success) {
+        setThemes(data.items)
+      }
+    } catch (error) {
+      console.error('Failed to load themes:', error)
+    } finally {
+      setLoadingThemes(false)
+    }
+  }
+
+  const loadAvatars = async () => {
+    try {
+      const response = await fetch('/api/store?category=avatars')
+      const data = await response.json()
+      if (data.success) {
+        setAvatars(data.items)
+      }
+    } catch (error) {
+      console.error('Failed to load avatars:', error)
+    } finally {
+      setLoadingAvatars(false)
+    }
+  }
+
   const updateSetting = (key: keyof Settings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
@@ -95,8 +146,21 @@ export default function SettingsPage() {
       // Get form values
       const usernameInput = document.querySelector('input[placeholder="Enter username"]') as HTMLInputElement
       const emailInput = document.querySelector('input[placeholder="Enter email"]') as HTMLInputElement
+      const themeSelect = document.querySelector('select') as HTMLSelectElement
+      const avatarSelect = document.querySelector('select[defaultValue]') as HTMLSelectElement
+      const avatarInput = document.querySelector('input[placeholder="Enter custom avatar URL"]') as HTMLInputElement
 
-      const response = await fetch('/api/auth/update-profile', {
+      const selectedTheme = themeSelect?.value
+
+      // Check if the selected theme is a premium theme and if user has purchased it
+      if (selectedTheme && selectedTheme !== 'default' && selectedTheme !== 'dark' && selectedTheme !== 'light') {
+        // For premium themes, redirect to store for purchase
+        alert(`To use ${selectedTheme}, please purchase it from the store.`)
+        window.location.href = '/store?category=themes'
+        return
+      }
+
+      const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -104,13 +168,20 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({
           username: usernameInput?.value,
-          email: emailInput?.value
+          email: emailInput?.value,
+          theme: selectedTheme,
+          avatar: avatarSelect?.value === 'custom' ? avatarInput?.value : avatarSelect?.value
         })
       })
 
       if (response.ok) {
         alert('Profile updated successfully!')
+        // Sync localStorage with DB
+        const updatedSettings = { ...settings, theme: selectedTheme || 'default' }
+        localStorage.setItem('settings', JSON.stringify(updatedSettings))
+        setSettings(updatedSettings)
         loadUserProfile() // Reload profile
+        applyTheme(selectedTheme || 'default')
       } else {
         const error = await response.json()
         alert(error.error || 'Failed to update profile')
@@ -120,6 +191,47 @@ export default function SettingsPage() {
       alert('Failed to update profile. Please try again.')
     } finally {
       setIsUpdating(false)
+    }
+  }
+
+  const applyTheme = (theme: string) => {
+    const root = document.documentElement
+    switch (theme) {
+      case 'dark':
+        setIsDarkMode(true)
+        root.style.setProperty('--theme-primary', '#8B5CF6')
+        root.style.setProperty('--theme-secondary', '#F59E0B')
+        root.style.setProperty('--theme-accent', '#EF4444')
+        break
+      case 'light':
+        setIsDarkMode(false)
+        root.style.setProperty('--theme-primary', '#8B5CF6')
+        root.style.setProperty('--theme-secondary', '#F59E0B')
+        root.style.setProperty('--theme-accent', '#EF4444')
+        break
+      case 'Dark Nebula Theme':
+        setIsDarkMode(true)
+        root.style.setProperty('--theme-primary', '#9333EA')
+        root.style.setProperty('--theme-secondary', '#7C3AED')
+        root.style.setProperty('--theme-accent', '#EC4899')
+        break
+      case 'Cyber Green Theme':
+        setIsDarkMode(true)
+        root.style.setProperty('--theme-primary', '#10B981')
+        root.style.setProperty('--theme-secondary', '#059669')
+        root.style.setProperty('--theme-accent', '#34D399')
+        break
+      case 'Ocean Blue Theme':
+        setIsDarkMode(false)
+        root.style.setProperty('--theme-primary', '#3B82F6')
+        root.style.setProperty('--theme-secondary', '#1D4ED8')
+        root.style.setProperty('--theme-accent', '#60A5FA')
+        break
+      default:
+        setIsDarkMode(true)
+        root.style.setProperty('--theme-primary', '#8B5CF6')
+        root.style.setProperty('--theme-secondary', '#F59E0B')
+        root.style.setProperty('--theme-accent', '#EF4444')
     }
   }
 
@@ -157,7 +269,7 @@ export default function SettingsPage() {
               Account Settings
             </h1>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               {/* Profile Settings */}
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
@@ -175,7 +287,7 @@ export default function SettingsPage() {
                     <label className="block text-white font-medium mb-2">Username</label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                      className="w-full px-4 py-3 dark-select"
                       placeholder="Enter username"
                       defaultValue={user?.name || ''}
                     />
@@ -185,10 +297,65 @@ export default function SettingsPage() {
                     <label className="block text-white font-medium mb-2">Email</label>
                     <input
                       type="email"
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                      className="w-full px-4 py-3 dark-select"
                       placeholder="Enter email"
                       defaultValue={user?.email || ''}
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">Theme</label>
+                    <select
+                      className="w-full px-4 py-3 dark-select"
+                      defaultValue={user?.theme || 'default'}
+                    >
+                      <option value="default" className="bg-gray-800 text-white">Default</option>
+                      <option value="dark" className="bg-gray-800 text-white">Dark</option>
+                      <option value="light" className="bg-gray-800 text-white">Light</option>
+                      {themes.map((theme) => (
+                        <option key={theme._id} value={theme.name} className="bg-gray-800 text-white">
+                          {theme.name} (₹{theme.price})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Premium themes require purchase from the store.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">Avatar</label>
+                    <select
+                      className="w-full px-4 py-3 dark-select mb-2"
+                      defaultValue={user?.avatar || ''}
+                      onChange={(e) => {
+                        const avatarInput = document.querySelector('input[placeholder="Enter custom avatar URL"]') as HTMLInputElement
+                        if (e.target.value === 'custom') {
+                          avatarInput.style.display = 'block'
+                          avatarInput.focus()
+                        } else {
+                          avatarInput.style.display = 'none'
+                          avatarInput.value = e.target.value
+                        }
+                      }}
+                    >
+                      <option value="" className="bg-gray-800 text-white">Default Avatar</option>
+                      {avatars.map((avatar) => (
+                        <option key={avatar._id} value={avatar.image || avatar._id} className="bg-gray-800 text-white">
+                          {avatar.name} (₹{avatar.price})
+                        </option>
+                      ))}
+                      <option value="custom" className="bg-gray-800 text-white">Custom URL</option>
+                    </select>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 dark-select hidden"
+                      placeholder="Enter custom avatar URL"
+                      defaultValue=""
+                    />
+                    <p className="text-gray-400 text-sm mt-1">
+                      Select a purchased avatar or enter a custom URL.
+                    </p>
                   </div>
 
                   <button
@@ -198,6 +365,74 @@ export default function SettingsPage() {
                   >
                     {isUpdating ? 'Updating...' : 'Update Profile'}
                   </button>
+                </div>
+              </motion.div>
+
+              {/* Referral Settings */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.15 }}
+                className="glass rounded-2xl p-6"
+              >
+                <div className="flex items-center mb-6">
+                  <Users className="w-6 h-6 text-spelinx-primary mr-3" />
+                  <h2 className="text-xl font-bold text-white">Referral Program</h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white font-medium mb-2">Your Referral Code</label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white font-mono text-center"
+                        value={user?.referralCode || 'Loading...'}
+                        readOnly
+                      />
+                      <button
+                        onClick={() => {
+                          if (user?.referralCode) {
+                            navigator.clipboard.writeText(user.referralCode)
+                            alert('Referral code copied to clipboard!')
+                          }
+                        }}
+                        className="px-4 py-3 bg-spelinx-primary hover:bg-spelinx-primary/90 rounded-lg text-white font-semibold transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Share this code with friends to earn referral rewards!
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">Referral Link</label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white font-mono text-sm"
+                        value={user?.referralCode ? `${window.location.origin}/signup?ref=${user.referralCode}` : 'Loading...'}
+                        readOnly
+                      />
+                      <button
+                        onClick={() => {
+                          if (user?.referralCode) {
+                            const link = `${window.location.origin}/signup?ref=${user.referralCode}`
+                            navigator.clipboard.writeText(link)
+                            alert('Referral link copied to clipboard!')
+                          }
+                        }}
+                        className="px-4 py-3 bg-spelinx-primary hover:bg-spelinx-primary/90 rounded-lg text-white font-semibold transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Share this link with friends to invite them with your referral code.
+                    </p>
+                  </div>
                 </div>
               </motion.div>
 

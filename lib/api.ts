@@ -70,7 +70,6 @@ export const premiumAPI = {
   submitProof: (transactionId: string, proofImage: string, planType: string) =>
     api.post('/premium/submit-proof', { transactionId, proofImage, planType }),
 
-  spinWheel: () => api.post('/spinning-wheel/spin'),
 
   customizeProfile: (customization: any) =>
     api.post('/premium/customize', customization),
@@ -83,7 +82,7 @@ export const storeAPI = {
     api.get(`/store${category ? `?category=${category}` : ''}`),
 
   purchaseItem: (itemId: string, paymentMethod: string) =>
-    api.post('/store/purchase', { itemId, paymentMethod }),
+    api.post('/store', { itemId, paymentMethod }),
 
   getTransactionHistory: () => api.get('/store/transactions'),
 }
@@ -118,11 +117,11 @@ export const dailyAPI = {
 }
 
 export const adminAPI = {
-  getUsers: (page = 1, limit = 10) =>
+  getUsers: (page = 1, limit = 1000) =>
     api.get(`/admin/users?page=${page}&limit=${limit}`),
 
   banUser: (userId: string, reason: string) =>
-    api.post(`/admin/users/${userId}/ban`, { ban: reason.includes('Banned'), reason }),
+    api.post(`/admin/users/${userId}/ban`, { ban: reason.length > 0, reason }),
 
   updateUser: (userId: string, updates: any) =>
     api.put(`/admin/users/${userId}`, updates),
@@ -134,7 +133,8 @@ export const adminAPI = {
 
   getPayments: () => api.get('/admin/payments'),
 
-  getDeposits: () => api.get('/admin/deposits'),
+  getDeposits: (page = 1, limit = 10) =>
+    api.get(`/admin/deposits?page=${page}&limit=${limit}`),
 
   approveDeposit: (depositId: string, notes?: string) =>
     api.post(`/admin/deposits/${depositId}/approve`, { notes }),
@@ -142,13 +142,26 @@ export const adminAPI = {
   rejectDeposit: (depositId: string, notes: string) =>
     api.post(`/admin/deposits/${depositId}/reject`, { notes }),
 
-  getPremiumPayments: () => api.get('/admin/premium-payments'),
+  getPremiumPayments: (page = 1, limit = 10) =>
+    api.get(`/admin/premium-payments?page=${page}&limit=${limit}`),
 
   approvePremiumPayment: (paymentId: string, notes?: string) =>
     api.post(`/admin/premium-payments/${paymentId}/approve`, { notes }),
 
   rejectPremiumPayment: (paymentId: string, notes: string) =>
     api.post(`/admin/premium-payments/${paymentId}/reject`, { notes }),
+
+  getStoreItems: (page = 1, limit = 10, category?: string, search?: string) =>
+    api.get(`/admin/store?page=${page}&limit=${limit}${category && category !== 'all' ? `&category=${category}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`),
+
+  createStoreItem: (itemData: any) =>
+    api.post('/admin/store', itemData),
+
+  updateStoreItem: (itemId: string, updates: any) =>
+    api.put(`/admin/store/${itemId}`, updates),
+
+  deleteStoreItem: (itemId: string) =>
+    api.delete(`/admin/store/${itemId}`),
 
   getSalesStats: (period: 'week' | 'month' | 'year' = 'month') =>
     api.get(`/admin/sales-stats?period=${period}`),

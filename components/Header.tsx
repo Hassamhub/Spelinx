@@ -25,6 +25,17 @@ export default function Header({ isDarkMode, setIsDarkMode }: HeaderProps) {
     }
   }, [])
 
+  useEffect(() => {
+    // Close menu on outside click
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && !(event.target as Element).closest('.user-menu')) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [isMenuOpen])
+
   return (
     <motion.header
       initial={{ y: -100 }}
@@ -49,45 +60,90 @@ export default function Header({ isDarkMode, setIsDarkMode }: HeaderProps) {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/" className={`hover:text-spelinx-primary transition-colors font-medium relative group ${
+            <Link href="/" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
               Home
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link href="/games" className={`hover:text-spelinx-primary transition-colors font-medium relative group ${
+            <Link href="/games" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
               Games
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link href="/store" className={`hover:text-spelinx-primary transition-colors font-medium relative group ${
+            <Link href="/store" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
               Store
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link href="/leaderboard" className={`hover:text-spelinx-primary transition-colors font-medium relative group ${
+            <Link href="/leaderboard" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
-              Leaderboard
+              Games Leaderboard
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+            <Link href="/referrals/leaderboard" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              Referral Leaderboard
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
             {isLoggedIn && (
-              <Link href="/referral" className={`hover:text-spelinx-primary transition-colors font-medium relative group ${
+              <Link href="/my-themes" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                My Themes
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
+              </Link>
+            )}
+            {isLoggedIn && (
+              <Link href="/referral" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 Referral
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
               </Link>
             )}
-            <Link href="/about" className={`hover:text-spelinx-primary transition-colors font-medium relative group ${
+            <Link href="/about" className={`hover:text-spelinx-primary transition-colors font-medium relative group min-h-[44px] flex items-center ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
               About
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-spelinx-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
           </nav>
+
+          {/* Mobile Menu Toggle */}
+          <div className="md:hidden">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onTouchStart={(e) => {
+                e.preventDefault()
+                setIsMenuOpen(!isMenuOpen)
+              }}
+              className={`p-2 rounded-full glass hover:glow-effect transition-all duration-300 min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                isDarkMode ? '' : 'bg-gray-100'
+              }`}
+            >
+              <motion.div className="flex flex-col space-y-1">
+                <motion.div
+                  animate={{ rotate: isMenuOpen ? 45 : 0, y: isMenuOpen ? 5 : 0 }}
+                  className={`w-4 h-0.5 ${isDarkMode ? 'bg-white' : 'bg-gray-900'} transition-all`}
+                />
+                <motion.div
+                  animate={{ opacity: isMenuOpen ? 0 : 1 }}
+                  className={`w-4 h-0.5 ${isDarkMode ? 'bg-white' : 'bg-gray-900'} transition-all`}
+                />
+                <motion.div
+                  animate={{ rotate: isMenuOpen ? -45 : 0, y: isMenuOpen ? -5 : 0 }}
+                  className={`w-4 h-0.5 ${isDarkMode ? 'bg-white' : 'bg-gray-900'} transition-all`}
+                />
+              </motion.div>
+            </motion.button>
+          </div>
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
@@ -96,7 +152,11 @@ export default function Header({ isDarkMode, setIsDarkMode }: HeaderProps) {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`p-2 rounded-full glass hover:glow-effect transition-all duration-300 ${
+              onTouchStart={(e) => {
+                e.preventDefault()
+                setIsDarkMode(!isDarkMode)
+              }}
+              className={`p-2 rounded-full glass hover:glow-effect transition-all duration-300 min-h-[44px] min-w-[44px] flex items-center justify-center ${
                 isDarkMode ? '' : 'bg-gray-100'
               }`}
             >
@@ -108,16 +168,24 @@ export default function Header({ isDarkMode, setIsDarkMode }: HeaderProps) {
             </motion.button>
 
             {/* User Menu */}
-            <div className="relative">
+            <div className="relative user-menu">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`flex items-center space-x-2 p-2 rounded-full glass hover:glow-effect transition-all duration-300 ${
+                onTouchStart={(e) => {
+                  e.preventDefault()
+                  setIsMenuOpen(!isMenuOpen)
+                }}
+                className={`flex items-center space-x-2 p-2 rounded-full glass hover:glow-effect transition-all duration-300 min-h-[44px] min-w-[44px] justify-center ${
                   isDarkMode ? '' : 'bg-gray-100'
                 }`}
               >
-                <User className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
+                <img
+                  src={user?.avatar || "/assets/default-avatar.svg"}
+                  alt="Avatar"
+                  className="w-6 h-6 rounded-full object-cover"
+                />
               </motion.button>
 
               {isMenuOpen && (
@@ -201,6 +269,65 @@ export default function Header({ isDarkMode, setIsDarkMode }: HeaderProps) {
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <motion.nav
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className={`md:hidden border-t ${
+              isDarkMode ? 'border-white/20' : 'border-gray-300'
+            }`}
+          >
+            <div className="px-6 py-4 space-y-4">
+              <Link href="/" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Home
+              </Link>
+              <Link href="/games" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Games
+              </Link>
+              <Link href="/store" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Store
+              </Link>
+              <Link href="/leaderboard" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Games Leaderboard
+              </Link>
+              <Link href="/referrals/leaderboard" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Referral Leaderboard
+              </Link>
+              {isLoggedIn && (
+                <Link href="/my-themes" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  My Themes
+                </Link>
+              )}
+              {isLoggedIn && (
+                <Link href="/referral" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Referral
+                </Link>
+              )}
+              <Link href="/about" onClick={() => setIsMenuOpen(false)} className={`block hover:text-spelinx-primary transition-colors font-medium min-h-[44px] flex items-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                About
+              </Link>
+            </div>
+          </motion.nav>
+        )}
       </div>
     </motion.header>
   )

@@ -9,9 +9,9 @@ module.exports = {
     extend: {
       colors: {
         spelinx: {
-          primary: '#6366f1',
-          secondary: '#8b5cf6',
-          accent: '#f59e0b',
+          primary: 'var(--theme-primary)',
+          secondary: 'var(--theme-secondary)',
+          accent: 'var(--theme-accent)',
           dark: '#0f0f23',
           light: '#ffffff',
           gray: '#374151',

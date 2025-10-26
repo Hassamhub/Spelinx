@@ -6,7 +6,8 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { adminAPI } from '@/lib/api'
-import { Package, Palette, User, Crown, Plus, Edit, Trash2, Save, X } from 'lucide-react'
+import { Package, Palette, User, Crown, Plus, Edit, Trash2, Save, X, Upload } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface StoreItem {
   _id?: string
@@ -33,59 +34,52 @@ export default function StoreManagement() {
     name: '',
     description: '',
     price: 0,
-    category: 'skins',
+    category: selectedCategory,
     isActive: true
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
+  const [themeFile, setThemeFile] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    loadStoreItems()
+    // Reset to first page when category or search changes
+    setCurrentPage(1)
+  }, [selectedCategory, searchTerm])
+
+  useEffect(() => {
+    // Update form category when selected category changes
+    setNewItem(prev => ({ ...prev, category: selectedCategory }))
   }, [selectedCategory])
 
-  const loadStoreItems = async () => {
+  useEffect(() => {
+    loadStoreItems(currentPage, selectedCategory, searchTerm)
+  }, [currentPage, selectedCategory, searchTerm])
+
+  const loadStoreItems = async (page: number = currentPage, category: string = selectedCategory, search: string = searchTerm) => {
     try {
-      // For demo purposes, load static data since API isn't implemented
-      const demoItems: StoreItem[] = [
-        {
-          _id: '1',
-          name: 'Neon Glow Skin',
-          description: 'Bright neon effects for your interface',
-          price: 50,
-          category: 'skins' as const,
-          createdAt: '2024-01-15',
-          isActive: true
-        },
-        {
-          _id: '2',
-          name: 'Dark Knight Theme',
-          description: 'Complete dark theme with special effects',
-          price: 75,
-          category: 'themes' as const,
-          createdAt: '2024-01-14',
-          isActive: true
-        },
-        {
-          _id: '3',
-          name: 'Pixel Master Avatar',
-          description: 'Retro pixel art avatar collection',
-          price: 30,
-          category: 'avatars' as const,
-          createdAt: '2024-01-13',
-          isActive: true
-        },
-        {
-          _id: '4',
-          name: 'SPELINX Plus Monthly',
-          description: 'Premium membership with exclusive benefits',
-          price: 199,
-          category: 'premium' as const,
-          createdAt: '2024-01-12',
-          isActive: true
-        }
-      ]
-      setItems(demoItems.filter(item => item.category === selectedCategory))
-    } catch (error) {
+      setLoading(true)
+      const response = await adminAPI.getStoreItems(page, 10, category, search)
+      setItems(response.data.items || [])
+      setTotalPages(response.data.totalPages || 1)
+      setTotalItems(response.data.total || 0)
+    } catch (error: any) {
       console.error('Failed to load store items:', error)
-      setItems([])
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.')
+        router.push('/login')
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied. Admin privileges required.')
+        router.push('/login')
+      } else {
+        toast.error('Failed to load store items')
+        setItems([])
+        setTotalPages(1)
+        setTotalItems(0)
+      }
     } finally {
       setLoading(false)
     }
@@ -93,19 +87,62 @@ export default function StoreManagement() {
 
   const handleAddItem = async () => {
     try {
-      // For demo purposes, just reload data since API isn't implemented
+      let imageUrl = ''
+
+      if (imageFile) {
+        // Upload image
+        const formData = new FormData()
+        formData.append('image', imageFile)
+
+        const uploadResponse = await fetch('/api/upload/store-image', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          imageUrl = uploadData.url
+        } else {
+          throw new Error('Failed to upload image')
+        }
+      }
+
+      if (selectedCategory === 'themes') {
+        // Use admin themes API for themes
+        const themeData = {
+          name: newItem.name,
+          description: newItem.description,
+          price: newItem.price,
+          scope: 'full_site', // Default scope
+          previewUrl: imageUrl,
+          themeFile: JSON.parse(themeFile || '{}')
+        }
+        await fetch('/api/admin/themes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(themeData)
+        })
+      } else {
+        await adminAPI.createStoreItem({ ...newItem, image: imageUrl })
+      }
+
       loadStoreItems()
       setNewItem({
         name: '',
         description: '',
         price: 0,
-        category: 'skins',
+        category: selectedCategory,
         isActive: true
       })
-      alert('Item added successfully! (Demo mode)')
-    } catch (error) {
+      setImageFile(null)
+      setImagePreview('')
+      setThemeFile('')
+      toast.success('Item added successfully!')
+    } catch (error: any) {
       console.error('Failed to add item:', error)
-      alert('Failed to add item')
+      toast.error(error.response?.data?.error || 'Failed to add item')
     }
   }
 
@@ -113,27 +150,27 @@ export default function StoreManagement() {
     if (!editingItem?._id) return
 
     try {
-      // For demo purposes, just reload data since API isn't implemented
+      await adminAPI.updateStoreItem(editingItem._id, editingItem)
       loadStoreItems()
       setIsEditing(false)
       setEditingItem(null)
-      alert('Item updated successfully! (Demo mode)')
-    } catch (error) {
+      toast.success('Item updated successfully!')
+    } catch (error: any) {
       console.error('Failed to update item:', error)
-      alert('Failed to update item')
+      toast.error(error.response?.data?.error || 'Failed to update item')
     }
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return
+    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) return
 
     try {
-      // For demo purposes, just reload data since API isn't implemented
+      await adminAPI.deleteStoreItem(itemId)
       loadStoreItems()
-      alert('Item deleted successfully! (Demo mode)')
-    } catch (error) {
+      toast.success('Item deleted successfully!')
+    } catch (error: any) {
       console.error('Failed to delete item:', error)
-      alert('Failed to delete item')
+      toast.error(error.response?.data?.error || 'Failed to delete item')
     }
   }
 
@@ -219,21 +256,49 @@ export default function StoreManagement() {
           <p className="text-gray-400">Manage SPELINX store items, skins, themes, avatars, and premium packages</p>
         </motion.div>
 
-        {/* Category Tabs */}
+        {/* Search and Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="flex items-center space-x-4 mb-6"
+        >
+          <div className="relative flex-1 max-w-md">
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1) // Reset to first page when search changes
+              }}
+              className="pl-4 pr-4 py-2 w-full dark-select"
+            />
+          </div>
+
+          <div className="text-sm text-gray-400">
+            {totalItems} items total
+          </div>
+        </motion.div>
+
+        {/* Category Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
           className="flex flex-wrap gap-2 mb-6"
         >
           {categories.map(({ key, label, icon: Icon, color }) => (
             <button
               key={key}
-              onClick={() => setSelectedCategory(key as any)}
+              onClick={() => {
+                setSelectedCategory(key as any)
+                setCurrentPage(1) // Reset to first page when category changes
+              }}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
                 selectedCategory === key
-                  ? 'bg-spelinx-primary text-white shadow-lg'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                  ? 'bg-gradient-to-r from-spelinx-primary to-spelinx-secondary text-white shadow-lg shadow-spelinx-primary/25'
+                  : 'bg-gradient-to-r from-gray-800/50 to-gray-700/50 border border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50 backdrop-blur-sm'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -262,7 +327,7 @@ export default function StoreManagement() {
                   type="text"
                   value={newItem.name}
                   onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                  className="w-full px-4 py-2 dark-select"
                   placeholder="Enter item name"
                 />
               </div>
@@ -272,7 +337,7 @@ export default function StoreManagement() {
                 <textarea
                   value={newItem.description}
                   onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary resize-none"
+                  className="w-full px-4 py-2 dark-select resize-none"
                   rows={3}
                   placeholder="Enter item description"
                 />
@@ -284,16 +349,80 @@ export default function StoreManagement() {
                   type="number"
                   value={newItem.price}
                   onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                  className="w-full px-4 py-2 dark-select"
                   placeholder="0"
                   min="0"
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                <select
+                  value={newItem.isActive ? 'active' : 'inactive'}
+                  onChange={(e) => setNewItem({ ...newItem, isActive: e.target.value === 'active' })}
+                  className="w-full px-4 py-2 dark-select"
+                >
+                  <option value="active" className="dark-select-option">Active</option>
+                  <option value="inactive" className="dark-select-option">Inactive</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Image</label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        setImageFile(file)
+                        const reader = new FileReader()
+                        reader.onload = (e) => {
+                          setImagePreview(e.target?.result as string)
+                        }
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-spelinx-secondary transition-colors"
+                  >
+                    <div className="text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-400">
+                        {imagePreview ? 'Image selected' : 'Click to upload image'}
+                      </p>
+                    </div>
+                  </label>
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-lg mx-auto" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {selectedCategory === 'themes' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Theme JSON</label>
+                  <textarea
+                    value={themeFile}
+                    onChange={(e) => setThemeFile(e.target.value)}
+                    className="w-full px-4 py-2 dark-select resize-none"
+                    rows={5}
+                    placeholder='{"primary": "#ff0000", "secondary": "#00ff00"}'
+                  />
+                </div>
+              )}
+
               <Button
                 onClick={handleAddItem}
-                className="w-full bg-gradient-to-r from-spelinx-primary to-spelinx-secondary hover:from-spelinx-primary/90 hover:to-spelinx-secondary/90"
-                disabled={!newItem.name || !newItem.description || newItem.price <= 0}
+                className="w-full bg-gradient-to-r from-spelinx-primary to-spelinx-secondary hover:from-spelinx-primary/90 hover:to-spelinx-secondary/90 shadow-lg shadow-spelinx-primary/25"
+                disabled={!newItem.name || !newItem.description || newItem.price <= 0 || (selectedCategory === 'themes' && !themeFile)}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item
@@ -321,7 +450,7 @@ export default function StoreManagement() {
                     type="text"
                     value={editingItem.name}
                     onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                    className="w-full px-4 py-2 dark-select"
                   />
                 </div>
 
@@ -330,7 +459,7 @@ export default function StoreManagement() {
                   <textarea
                     value={editingItem.description}
                     onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary resize-none"
+                    className="w-full px-4 py-2 dark-select resize-none"
                     rows={3}
                   />
                 </div>
@@ -341,15 +470,28 @@ export default function StoreManagement() {
                     type="number"
                     value={editingItem.price}
                     onChange={(e) => setEditingItem({ ...editingItem, price: Number(e.target.value) })}
-                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-spelinx-primary"
+                    className="w-full px-4 py-2 dark-select"
                     min="0"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                  <select
+                    value={editingItem.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => setEditingItem({ ...editingItem, isActive: e.target.value === 'active' })}
+                    className="w-full px-4 py-2 dark-select"
+                  >
+                    <option value="active" className="dark-select-option">Active</option>
+                    <option value="inactive" className="dark-select-option">Inactive</option>
+                  </select>
                 </div>
 
                 <div className="flex space-x-2">
                   <Button
                     onClick={handleUpdateItem}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-600/90 hover:to-green-700/90"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-600/90 hover:to-green-700/90 shadow-lg shadow-green-500/25"
+                    disabled={!editingItem?.name || !editingItem?.description || editingItem?.price <= 0}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
@@ -357,7 +499,7 @@ export default function StoreManagement() {
                   <Button
                     onClick={cancelEditing}
                     variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50 backdrop-blur-sm"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -384,14 +526,23 @@ export default function StoreManagement() {
                     key={item._id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="bg-white/5 rounded-lg p-4 border border-white/10"
+                    className="bg-gradient-to-r from-white/5 to-white/10 rounded-lg p-4 border border-spelinx-primary/20 hover:border-spelinx-primary/40 transition-all duration-200"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-white">{item.name}</h4>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-semibold text-white">{item.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${
+                            item.isActive
+                              ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                              : 'bg-red-500/20 text-red-300 border-red-500/30'
+                          }`}>
+                            {item.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                         <p className="text-sm text-gray-400 mt-1">{item.description}</p>
                         <div className="flex items-center space-x-4 mt-2">
-                          <span className="text-spelinx-accent font-mono">{item.price} INX</span>
+                          <span className="text-spelinx-accent font-mono font-semibold">₹{item.price}</span>
                           <span className="text-xs text-gray-500">
                             Added: {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
                           </span>
@@ -401,7 +552,7 @@ export default function StoreManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-gray-400 hover:text-white"
+                          className="text-gray-400 hover:text-white hover:bg-white/10"
                           onClick={() => startEditing(item)}
                         >
                           <Edit className="w-4 h-4" />
@@ -409,7 +560,7 @@ export default function StoreManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                           onClick={() => handleDeleteItem(item._id!)}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -428,6 +579,67 @@ export default function StoreManagement() {
                 )}
               </div>
             </motion.div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-sm text-gray-300 font-medium">
+                Showing <span className="text-spelinx-primary font-semibold">{items.length}</span> of <span className="text-spelinx-accent font-semibold">{totalItems}</span> items
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50 disabled:opacity-50 disabled:hover:bg-gray-800/50 transition-all duration-200"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ← Previous
+                </Button>
+
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className={`min-w-[40px] transition-all duration-200 ${
+                          currentPage === pageNum
+                            ? "bg-gradient-to-r from-spelinx-primary to-spelinx-secondary text-white shadow-lg shadow-spelinx-primary/25"
+                            : "bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50"
+                        }`}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-spelinx-primary/30 text-white hover:bg-spelinx-primary/20 hover:border-spelinx-primary/50 disabled:opacity-50 disabled:hover:bg-gray-800/50 transition-all duration-200"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </Button>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -5,17 +5,19 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 // Sample crossword data - Better crossword structure
+const SOLUTION = [
+  ['C', '', 'M', '', 'U', '', 'E', ''],
+  ['', 'O', '', 'P', '', 'T', '', 'R'],
+  ['M', '', 'M', '', 'U', '', 'E', ''],
+  ['', 'P', '', 'P', '', 'T', '', 'R'],
+  ['U', '', 'M', '', 'U', '', 'E', ''],
+  ['', 'T', '', 'P', '', 'T', '', 'R'],
+  ['E', '', 'M', '', 'U', '', 'E', ''],
+  ['', 'R', '', 'P', '', 'T', '', 'R']
+]
+
 const CROSSWORD_DATA = {
-  grid: [
-    ['C', '', 'M', '', 'U', '', 'E', ''],
-    ['', 'O', '', 'P', '', 'T', '', 'R'],
-    ['M', '', 'M', '', 'U', '', 'E', ''],
-    ['', 'P', '', 'P', '', 'T', '', 'R'],
-    ['U', '', 'M', '', 'U', '', 'E', ''],
-    ['', 'T', '', 'P', '', 'T', '', 'R'],
-    ['E', '', 'M', '', 'U', '', 'E', ''],
-    ['', 'R', '', 'P', '', 'T', '', 'R']
-  ],
+  grid: SOLUTION,
   clues: {
     across: [
       { number: 1, clue: 'Electronic device for processing data', answer: 'COMPUTER', startX: 0, startY: 0, length: 8 },
@@ -30,15 +32,17 @@ const CROSSWORD_DATA = {
   }
 }
 
+const initialUserGrid = SOLUTION.map(row => row.map(cell => cell === '' ? '' : ''))
+
 export default function CrosswordGame() {
-  const [grid, setGrid] = useState<string[][]>(CROSSWORD_DATA.grid)
+  const [grid, setGrid] = useState<string[][]>(initialUserGrid)
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [completed, setCompleted] = useState(false)
 
   const handleCellClick = (x: number, y: number) => {
-    // Allow clicking on any cell that should be filled (not empty in original grid)
-    if (CROSSWORD_DATA.grid[y][x] !== '') {
+    // Allow clicking on any cell that should be filled (not empty in solution)
+    if (SOLUTION[y][x] !== '') {
       setSelectedCell({ x, y })
     }
   }
@@ -54,7 +58,7 @@ export default function CrosswordGame() {
 
       // Auto-move to next cell
       const nextX = x + 1
-      if (nextX < 8 && CROSSWORD_DATA.grid[y][nextX] !== '') {
+      if (nextX < 8 && SOLUTION[y][nextX] !== '') {
         setSelectedCell({ x: nextX, y })
       }
     } else if (e.key === 'Backspace') {
@@ -64,21 +68,27 @@ export default function CrosswordGame() {
 
       // Move to previous cell
       const prevX = x - 1
-      if (prevX >= 0 && CROSSWORD_DATA.grid[y][prevX] !== '') {
+      if (prevX >= 0 && SOLUTION[y][prevX] !== '') {
         setSelectedCell({ x: prevX, y })
       }
     }
   }
 
   const checkCompletion = () => {
-    // Simple completion check
-    const filledCells = grid.flat().filter(cell => cell !== '' && cell !== ' ').length
-    const totalCells = CROSSWORD_DATA.grid.flat().filter(cell => cell !== '').length
-    setCompleted(filledCells === totalCells)
+    for (let i = 0; i < SOLUTION.length; i++) {
+      for (let j = 0; j < SOLUTION[0].length; j++) {
+        if (SOLUTION[i][j] === '') continue
+        if (grid[i][j]?.toUpperCase() !== SOLUTION[i][j].toUpperCase()) {
+          setCompleted(false)
+          return
+        }
+      }
+    }
+    setCompleted(true)
   }
 
   const resetPuzzle = () => {
-    setGrid(CROSSWORD_DATA.grid.map(row => row.map(cell => '')))
+    setGrid(initialUserGrid.map(row => [...row]))
     setSelectedCell(null)
     setCompleted(false)
   }
@@ -119,7 +129,7 @@ export default function CrosswordGame() {
                   <div className="grid grid-cols-8 gap-1">
                     {grid.map((row, y) =>
                       row.map((cell, x) => {
-                        const isOriginal = CROSSWORD_DATA.grid[y][x] !== ''
+                        const isOriginal = SOLUTION[y][x] !== ''
                         const isSelected = selectedCell?.x === x && selectedCell?.y === y
 
                         return (

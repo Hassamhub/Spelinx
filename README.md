@@ -15,6 +15,10 @@ SPELINX is a modern, full-stack gaming platform built with cutting-edge technolo
 - **Authentication & Security** - JWT-based auth with role-based access control
 - **Responsive Design** - Mobile-first approach with dark theme
 - **MongoDB Integration** - Comprehensive database schema for all features
+- **Custom Theme System** - Dynamic color themes with CSS variables and persistence
+- **Referral Program** - Complete referral system with leaderboard and rewards
+- **Avatar System** - Custom avatars with default fallbacks
+- **Touch-Friendly UI** - Mobile-optimized controls and interactions
 
 ### 🛠️ Tech Stack
 
@@ -58,7 +62,6 @@ spelinx/
 │   ├── Referral.js
 │   ├── Transaction.js
 │   ├── DailyClaim.js
-│   └── SpinningWheel.js
 ├── routes/
 │   ├── auth.js
 │   ├── games.js
@@ -69,7 +72,6 @@ spelinx/
 │   ├── achievements.js
 │   ├── daily.js
 │   ├── referral.js
-│   ├── spinning-wheel.js
 │   └── store.js
 ├── middleware/
 │   └── auth.js
@@ -153,6 +155,21 @@ MONGO_URI=mongodb+srv://...
 JWT_SECRET=your-jwt-secret
 FRONTEND_URL=http://localhost:3000
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Optional for S3/Cloudinary uploads (falls back to local storage)
+S3_BUCKET=your-s3-bucket
+S3_ACCESS_KEY=your-s3-access-key
+S3_SECRET_KEY=your-s3-secret-key
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# UPI Payment Configuration
+FAMPAY_UPI_ID=merchant@fam
+MERCHANT_NAME=SPELINX Gaming
+
+# Admin Service Token (for referral rewards)
+SERVICE_TOKEN=your-service-token
 ```
 
 3. **Build Frontend**
@@ -163,12 +180,24 @@ npm run build
 cd ..
 ```
 
-4. **Start Development Server**
+4. **Run Seed Scripts**
+```bash
+node scripts/addReferralCodesToUsers.js
+node scripts/seedDefaultAvatar.js
+node scripts/seedThemes.js
+```
+
+5. **Start Development Server**
 ```bash
 npm run dev
 ```
 
 Visit `http://localhost:3000` to see your app!
+
+6. **Testing**
+```bash
+npm run test
+```
 
 ### 📱 Pages & Features
 
@@ -181,13 +210,19 @@ Visit `http://localhost:3000` to see your app!
 #### User Features
 - **Dashboard** - User profile and statistics
 - **Wallet** - Balance management and transactions
-- **Store** - Premium items and cosmetics
+- **Store** - Premium items, themes, avatars, and cosmetics
+- **MyThemes** - Manage and apply purchased themes
+- **MyAvatars** - Manage and apply purchased avatars
 - **Premium** - Subscription plans and features
-- **Settings** - Account preferences
+- **Referral** - Referral program with leaderboard
+- **Settings** - Account preferences with theme/avatar selection
 
 #### Admin Features
 - **User Management** - Ban/unban users, view stats
-- **Payment Management** - Approve/reject deposits and premium payments
+- **Payment Management** - Approve/reject deposits, premium payments, and store purchases
+- **Referral Management** - View and approve referral rewards
+- **Theme Management** - Upload and manage custom themes
+- **Store Management** - Manage all store items including themes and avatars
 - **Analytics** - Sales stats and user metrics
 
 ### 🎮 Games Included
@@ -205,7 +240,22 @@ Visit `http://localhost:3000` to see your app!
 - **Premium Cosmetics** - Exclusive themes and effects
 - **VIP Support** - Priority customer service
 - **Bonus Rewards** - Increased daily rewards
-- **Spinning Wheel** - Premium rewards system
+
+### 🎨 Theme System
+
+- **Dynamic Themes** - Custom color schemes with CSS variables
+- **Theme Persistence** - Settings saved in DB and localStorage
+- **Preview Mode** - 10-second preview before applying
+- **Admin Management** - Upload and manage themes via admin panel
+- **Mobile Optimized** - Touch-friendly theme selection
+
+### 👥 Referral Program
+
+- **Referral Codes** - 8-character unique codes generated on signup
+- **Leaderboard** - Top referrers with rankings and rewards
+- **Admin Approval** - Manual approval of referral rewards
+- **Bonus System** - Credits and theme unlocks for successful referrals
+- **Anti-Abuse** - IP-based limits and duplicate prevention
 
 ### 🔒 Security Features
 
@@ -244,20 +294,38 @@ npm test
 
 #### Authentication
 - `POST /api/auth/login` - User login
-- `POST /api/auth/signup` - User registration
+- `POST /api/auth/signup` - User registration (supports ?ref= parameter)
 - `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update user profile (theme, avatar)
 
 #### Games
 - `GET /api/games` - Get available games
 - `POST /api/games/:id/play` - Play a game
 
-#### Premium
+#### Premium & Store
 - `POST /api/premium/initiate-payment` - Start premium subscription
 - `POST /api/premium/submit-proof` - Submit payment proof
+- `GET /api/themes` - Get available themes
+- `POST /api/themes/buy/:themeId` - Purchase theme
+- `GET /api/user/themes` - Get user's purchased themes
+- `POST /api/user/themes/apply/:themeId` - Apply theme
+- `GET /api/store` - Get store items
+- `POST /api/store` - Purchase store items
+
+#### Referral System
+- `GET /api/referral/leaderboard` - Get referral leaderboard
+- `GET /api/referral/me/link` - Get user's referral link and stats
+- `POST /api/referral/reward` - Process referral reward (admin only)
+- `GET /api/admin/referrals/all` - Get all referrals (admin only)
 
 #### Wallet
 - `GET /api/wallet` - Get wallet balance
 - `POST /api/wallet/deposit-initiate` - Initiate deposit
+
+#### Admin
+- `POST /api/admin/store-payments/:paymentId/approve` - Approve store payment
+- `POST /api/admin/themes` - Upload theme (admin only)
+- `GET /api/admin/store` - Manage store items
 
 ### 🤝 Contributing
 
