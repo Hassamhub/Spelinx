@@ -1,348 +1,198 @@
-# SPELINX - Premium Gaming Platform
+# 🎮 SPELINX - Premium Gaming Platform
 
-## 🚀 Project Overview
+A comprehensive web-based gaming platform built with Next.js, featuring interactive games, customizable themes, referral systems, wallet functionality, and premium subscriptions.
 
-SPELINX is a modern, full-stack gaming platform built with cutting-edge technologies featuring stunning glassmorphism UI design, real-time multiplayer features, and premium gaming experience.
+## ✨ Features
 
-### ✨ Features
+### 🎯 Gaming System
+- **6 Interactive Games**: 2048, Crossword, Guess the Flag, Snake, Tetris, Tic-Tac-Toe
+- **Scoring & Leaderboards**: Track performance and compete globally
+- **Reward System**: Earn credits and bonuses through gameplay
 
-- **Modern Glassmorphism UI** - Beautiful backdrop blur effects and gradient animations
-- **Full-Stack Architecture** - Next.js frontend with Express.js backend
-- **Real-Time Features** - Socket.io integration for live leaderboards and achievements
-- **Premium System** - Wallet integration, premium subscriptions, and in-game purchases
-- **Admin Panel** - Complete administrative dashboard for user management
-- **Multiple Games** - 2048, Snake, Tetris, Tic-Tac-Toe, Crossword, Guess the Flag
-- **Authentication & Security** - JWT-based auth with role-based access control
-- **Responsive Design** - Mobile-first approach with dark theme
-- **MongoDB Integration** - Comprehensive database schema for all features
-- **Custom Theme System** - Dynamic color themes with CSS variables and persistence
-- **Referral Program** - Complete referral system with leaderboard and rewards
-- **Avatar System** - Custom avatars with default fallbacks
-- **Touch-Friendly UI** - Mobile-optimized controls and interactions
+### 🎨 Theme & Customization
+- **Dynamic Themes**: Preview and apply custom themes with smooth transitions
+- **Theme Persistence**: LocalStorage + Database synchronization
+- **CSS Variables**: Support for colors and fonts with 250ms transitions
+- **Theme Store**: Purchase and manage custom themes
 
-### 🛠️ Tech Stack
+### 👥 Social & Referral System
+- **Referral Program**: Share codes and earn rewards
+- **Leaderboards**: Multiple competitive rankings
+- **User Profiles**: Custom avatars and profile management
 
-#### Frontend
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first CSS with custom glassmorphism effects
-- **Framer Motion** - Smooth animations and transitions
-- **Axios** - HTTP client for API calls
-- **Socket.io Client** - Real-time communication
+### 💰 Wallet & Payments
+- **UPI Integration**: Secure payment processing with QR codes
+- **Transaction Management**: Deposits, withdrawals, and history
+- **Premium Subscriptions**: Monthly/annual plans with exclusive features
 
-#### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **MongoDB** - NoSQL database
-- **Mongoose** - ODM for MongoDB
-- **Socket.io** - Real-time bidirectional communication
-- **JWT** - Authentication tokens
-- **Bcrypt** - Password hashing
-- **Rate Limiting** - API protection
+### 🔧 Admin Panel
+- **User Management**: Ban/unban users, view profiles
+- **Payment Approval**: Verify deposits and withdrawals
+- **Content Management**: Manage themes and store items
+- **Analytics Dashboard**: Monitor platform activity
 
-### 📁 Project Structure
+### 🔒 Security Features
+- **DevSafetyProvider**: Development protection with password authentication
+- **JWT Authentication**: Secure session management
+- **Audit Logging**: Track all user actions
+- **Input Validation**: Comprehensive security measures
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- MongoDB
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Hassamhub/Spelinx.git
+   cd Spelinx
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Configure your environment variables:
+   ```env
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   NEXT_PUBLIC_API_URL=http://localhost:3000
+   ```
+
+4. **Set up the database**
+   ```bash
+   npm run db:setup
+   ```
+
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## 📁 Project Structure
 
 ```
 spelinx/
-├── README.md
-├── package.json
-├── server.js
-├── .env
-├── .env.production
-├── .gitignore
-├── config/
-│   └── db.js
-├── models/
-│   ├── User.js
-│   ├── GameHistory.js
-│   ├── Wallet.js
-│   ├── Payment.js
-│   ├── Achievement.js
-│   ├── Leaderboard.js
-│   ├── Referral.js
-│   ├── Transaction.js
-│   ├── DailyClaim.js
-├── routes/
-│   ├── auth.js
-│   ├── games.js
-│   ├── wallet.js
-│   ├── premium.js
-│   ├── admin.js
-│   ├── leaderboard.js
-│   ├── achievements.js
-│   ├── daily.js
-│   ├── referral.js
-│   └── store.js
-├── middleware/
-│   └── auth.js
-├── spelinx-frontend/
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tailwind.config.js
-│   ├── tsconfig.json
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   ├── globals.css
-│   │   ├── about/
-│   │   ├── dashboard/
-│   │   ├── games/
-│   │   ├── leaderboard/
-│   │   ├── login/
-│   │   ├── premium/
-│   │   ├── settings/
-│   │   ├── signup/
-│   │   ├── store/
-│   │   └── wallet/
-│   ├── components/
-│   │   ├── Header.tsx
-│   │   ├── Hero.tsx
-│   │   ├── GameGrid.tsx
-│   │   ├── PremiumSection.tsx
-│   │   ├── Leaderboard.tsx
-│   │   ├── Footer.tsx
-│   │   ├── FloatingParticles.tsx
-│   │   ├── LoadingScreen.tsx
-│   │   └── ui/
-│   ├── lib/
-│   │   ├── api.ts
-│   │   └── utils.ts
-│   └── types/
-│       └── index.ts
-└── tests/
-    └── hello.test.js
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes
+│   ├── admin/             # Admin panel pages
+│   ├── games/             # Game pages
+│   ├── my-themes/         # User theme management
+│   └── ...
+├── components/            # React components
+│   ├── ui/               # Reusable UI components
+│   └── ...
+├── lib/                   # Utility libraries
+│   ├── mongodb.ts        # Database connection
+│   ├── models.ts         # Data models
+│   └── ...
+├── public/               # Static assets
+│   └── assets/           # Images and icons
+├── scripts/              # Database seeding scripts
+└── ...
 ```
 
-### 🎨 UI/UX Design
+## 🎮 Available Games
 
-#### Glassmorphism Features
-- Backdrop blur effects
-- Gradient borders and shadows
-- Floating particle animations
-- Custom scrollbar styling
-- Animated gradients
-- Responsive card layouts
+1. **2048** - Classic sliding number puzzle
+2. **Crossword** - Word-based puzzle game
+3. **Guess the Flag** - Geography guessing game
+4. **Snake** - Classic snake game with scoring
+5. **Tetris** - Block-stacking puzzle game
+6. **Tic-Tac-Toe** - Strategic two-player game
 
-#### Color Scheme
-- Primary: `#6366f1` (Indigo)
-- Secondary: `#8b5cf6` (Violet)
-- Accent: `#f59e0b` (Amber)
-- Dark Background: `#0f0f23`
-- Glass Effects: Semi-transparent overlays
+## 🛠️ API Endpoints
 
-### 🚀 Getting Started
-
-#### Prerequisites
-- Node.js 18+
-- MongoDB Atlas account
-- Git
-
-#### Installation
-
-1. **Clone and Setup**
-```bash
-git clone <your-repo-url>
-cd spelinx
-npm install
-```
-
-2. **Environment Variables**
-Create `.env` file:
-```env
-NODE_ENV=development
-PORT=3000
-MONGO_URI=mongodb+srv://...
-JWT_SECRET=your-jwt-secret
-FRONTEND_URL=http://localhost:3000
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-
-# Optional for S3/Cloudinary uploads (falls back to local storage)
-S3_BUCKET=your-s3-bucket
-S3_ACCESS_KEY=your-s3-access-key
-S3_SECRET_KEY=your-s3-secret-key
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-# UPI Payment Configuration
-FAMPAY_UPI_ID=merchant@fam
-MERCHANT_NAME=SPELINX Gaming
-
-# Admin Service Token (for referral rewards)
-SERVICE_TOKEN=your-service-token
-```
-
-3. **Build Frontend**
-```bash
-cd spelinx-frontend
-npm install --legacy-peer-deps
-npm run build
-cd ..
-```
-
-4. **Run Seed Scripts**
-```bash
-node scripts/addReferralCodesToUsers.js
-node scripts/seedDefaultAvatar.js
-node scripts/seedThemes.js
-```
-
-5. **Start Development Server**
-```bash
-npm run dev
-```
-
-Visit `http://localhost:3000` to see your app!
-
-6. **Testing**
-```bash
-npm run test
-```
-
-### 📱 Pages & Features
-
-#### Public Pages
-- **Home** - Landing page with glassmorphism hero and game grid
-- **Games** - All available games with previews
-- **Leaderboard** - Global and game-specific rankings
-- **About** - Platform information and features
-
-#### User Features
-- **Dashboard** - User profile and statistics
-- **Wallet** - Balance management and transactions
-- **Store** - Premium items, themes, avatars, and cosmetics
-- **MyThemes** - Manage and apply purchased themes
-- **MyAvatars** - Manage and apply purchased avatars
-- **Premium** - Subscription plans and features
-- **Referral** - Referral program with leaderboard
-- **Settings** - Account preferences with theme/avatar selection
-
-#### Admin Features
-- **User Management** - Ban/unban users, view stats
-- **Payment Management** - Approve/reject deposits, premium payments, and store purchases
-- **Referral Management** - View and approve referral rewards
-- **Theme Management** - Upload and manage custom themes
-- **Store Management** - Manage all store items including themes and avatars
-- **Analytics** - Sales stats and user metrics
-
-### 🎮 Games Included
-
-1. **2048** - Number puzzle game
-2. **Snake** - Classic arcade game
-3. **Tetris** - Block stacking puzzle
-4. **Tic-Tac-Toe** - Strategic board game
-5. **Crossword** - Word puzzle game
-6. **Guess the Flag** - Geography trivia
-
-### 💰 Premium Features
-
-- **Unlimited Games** - All games available
-- **Premium Cosmetics** - Exclusive themes and effects
-- **VIP Support** - Priority customer service
-- **Bonus Rewards** - Increased daily rewards
-
-### 🎨 Theme System
-
-- **Dynamic Themes** - Custom color schemes with CSS variables
-- **Theme Persistence** - Settings saved in DB and localStorage
-- **Preview Mode** - 10-second preview before applying
-- **Admin Management** - Upload and manage themes via admin panel
-- **Mobile Optimized** - Touch-friendly theme selection
-
-### 👥 Referral Program
-
-- **Referral Codes** - 8-character unique codes generated on signup
-- **Leaderboard** - Top referrers with rankings and rewards
-- **Admin Approval** - Manual approval of referral rewards
-- **Bonus System** - Credits and theme unlocks for successful referrals
-- **Anti-Abuse** - IP-based limits and duplicate prevention
-
-### 🔒 Security Features
-
-- JWT authentication
-- Password hashing with bcrypt
-- Rate limiting on sensitive endpoints
-- CORS protection
-- Input validation and sanitization
-
-### 🌐 Deployment
-
-#### Render Deployment
-1. Push to GitHub
-2. Connect to Render
-3. Set environment variables
-4. Deploy automatically
-
-#### Environment Variables (Production)
-```env
-NODE_ENV=production
-PORT=10000
-MONGO_URI=your-production-mongodb-url
-JWT_SECRET=your-production-jwt-secret
-RENDER_EXTERNAL_URL=https://your-app-name.onrender.com
-ALLOWED_ORIGINS=https://your-app-name.onrender.com
-FRONTEND_URL=https://your-app-name.onrender.com
-```
-
-### 🧪 Testing
-
-```bash
-npm test
-```
-
-### 📈 API Endpoints
-
-#### Authentication
+### Authentication
 - `POST /api/auth/login` - User login
-- `POST /api/auth/signup` - User registration (supports ?ref= parameter)
-- `GET /api/auth/profile` - Get user profile
-- `PUT /api/auth/profile` - Update user profile (theme, avatar)
+- `POST /api/auth/signup` - User registration
+- `GET /api/auth/profile` - User profile
+- `POST /api/auth/logout` - User logout
 
-#### Games
-- `GET /api/games` - Get available games
-- `POST /api/games/:id/play` - Play a game
+### Games & Leaderboards
+- `GET /api/games` - Game statistics
+- `GET /api/leaderboard` - Global leaderboard
+- `GET /api/referrals/leaderboard` - Referral leaderboard
 
-#### Premium & Store
-- `POST /api/premium/initiate-payment` - Start premium subscription
-- `POST /api/premium/submit-proof` - Submit payment proof
-- `GET /api/themes` - Get available themes
-- `POST /api/themes/buy/:themeId` - Purchase theme
-- `GET /api/user/themes` - Get user's purchased themes
-- `POST /api/user/themes/apply/:themeId` - Apply theme
-- `GET /api/store` - Get store items
-- `POST /api/store` - Purchase store items
+### Store & Themes
+- `GET /api/themes` - Available themes
+- `GET /api/user/themes` - User's purchased themes
+- `POST /api/themes/buy/[themeId]` - Purchase theme
+- `POST /api/user/themes/apply/[themeId]` - Apply theme
 
-#### Referral System
-- `GET /api/referral/leaderboard` - Get referral leaderboard
-- `GET /api/referral/me/link` - Get user's referral link and stats
-- `POST /api/referral/reward` - Process referral reward (admin only)
-- `GET /api/admin/referrals/all` - Get all referrals (admin only)
-
-#### Wallet
-- `GET /api/wallet` - Get wallet balance
+### Wallet & Payments
+- `GET /api/wallet` - Wallet balance
 - `POST /api/wallet/deposit-initiate` - Initiate deposit
+- `POST /api/wallet/deposit-submit-proof` - Submit deposit proof
 
-#### Admin
-- `POST /api/admin/store-payments/:paymentId/approve` - Approve store payment
-- `POST /api/admin/themes` - Upload theme (admin only)
-- `GET /api/admin/store` - Manage store items
+## 🔐 Security Features
 
-### 🤝 Contributing
+### DevSafetyProvider
+- **Activation Date**: November 1, 2025
+- **Password**: `SPELINX_MASTER_KEY_zidifm32ncKN2XXEYDH7M`
+- **Purpose**: Development protection and unauthorized access prevention
+
+### Authentication
+- JWT-based sessions with secure token storage
+- Password hashing with bcrypt
+- Session validation on all protected routes
+
+## 🎨 Theme System
+
+Themes are defined using CSS variables and support:
+- **Colors**: Primary, secondary, accent colors
+- **Fonts**: Custom font families and sizes
+- **Scope**: Full site or games only
+- **Preview**: 10-second temporary preview
+- **Persistence**: LocalStorage + Database sync
+
+## 👨‍💼 Admin Features
+
+- **User Management**: Ban, unban, view user profiles
+- **Payment Verification**: Approve/reject deposits and withdrawals
+- **Content Moderation**: Manage themes and store items
+- **Analytics**: Platform usage statistics
+- **Audit Logs**: Track all administrative actions
+
+## 🌟 Premium Features
+
+- Exclusive themes and customizations
+- Premium-only leaderboards
+- Higher earning rates
+- Priority support
+- Advanced game modes
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-### 📄 License
+## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is proprietary software. All rights reserved.
 
-### 📞 Support
+## 🆘 Support
 
-For support, email support@spelinx.com or join our Discord community.
+For support or questions:
+- Create an issue on GitHub
+- Contact the development team
+- Check the admin panel for system status
 
 ---
 
-**Built with ❤️ using Next.js, Express.js, MongoDB, and modern web technologies**
+**Built with ❤️ for the gaming community**
