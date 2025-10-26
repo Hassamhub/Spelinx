@@ -375,39 +375,6 @@ export default function StorePage() {
                         <span className="text-2xl">🎨</span>
                       </div>
                     )}
-
-      {showThemePreview && previewTheme && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">{previewTheme.name} Preview</h3>
-              <button onClick={() => setShowThemePreview(false)} className="text-gray-400 hover:text-white">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            {previewTheme.image && (
-              <img src={previewTheme.image} alt="Preview" className="w-full h-48 object-cover rounded-xl mb-4" />
-            )}
-            <div
-              className="rounded-xl p-6 border border-white/10"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--theme-primary, #111827), var(--theme-secondary, #1f2937))',
-                // Fallbacks if themeFile missing keys
-                // CSS variables applied inline for preview scope only
-                ...(previewTheme.themeFile || {}),
-              } as any}
-            >
-              <div className="text-white text-2xl font-bold mb-2">Sample Heading</div>
-              <div className="text-gray-200 mb-4">Sample paragraph demonstrating theme colors.</div>
-              <div className="flex space-x-2">
-                <button className="px-4 py-2 rounded-lg bg-spelinx-primary text-white">Primary</button>
-                <button className="px-4 py-2 rounded-lg bg-spelinx-secondary text-white">Secondary</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
                     {item.owned && (
                       <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Owned</div>
                     )}
@@ -465,7 +432,7 @@ export default function StorePage() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+              ))
             )}
 
           {items.length === 0 && !loading && (
@@ -482,6 +449,37 @@ export default function StorePage() {
           </motion.div>
         </div>
       </motion.main>
+
+      {showThemePreview && previewTheme && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white">{previewTheme.name} Preview</h3>
+              <button onClick={() => setShowThemePreview(false)} className="text-gray-400 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            {previewTheme.image && (
+              <img src={previewTheme.image} alt="Preview" className="w-full h-48 object-cover rounded-xl mb-4" />
+            )}
+            <div
+              className="rounded-xl p-6 border border-white/10"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--theme-primary, #111827), var(--theme-secondary, #1f2937))',
+                ...(previewTheme.themeFile || {}),
+              } as any}
+            >
+              <div className="text-white text-2xl font-bold mb-2">Sample Heading</div>
+              <div className="text-gray-200 mb-4">Sample paragraph demonstrating theme colors.</div>
+              <div className="flex space-x-2">
+                <button className="px-4 py-2 rounded-lg bg-spelinx-primary text-white">Primary</button>
+                <button className="px-4 py-2 rounded-lg bg-spelinx-secondary text-white">Secondary</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
 
